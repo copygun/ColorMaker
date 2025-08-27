@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>최적화된 잉크 배합 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .result {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .ink-item {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background: #e3f2fd;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .satin {
+            background: #fff3e0;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .delta-e {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        .excellent { background: #4caf50; color: white; }
+        .good { background: #8bc34a; color: white; }
+        .fair { background: #ffc107; color: #333; }
+        .poor { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 최적화된 잉크 배합 테스트</h1>
+        
+        <div class="test-section">
+            <div class="test-title">테스트 1: 모든 농도 포함 확인</div>
+            <div id="test1-result" class="result">테스트 중...</div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">테스트 2: 최적 배합 계산 (파란색 목표)</div>
+            <div id="test2-result" class="result">테스트 중...</div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">테스트 3: 비용 가중치 적용 확인</div>
+            <div id="test3-result" class="result">테스트 중...</div>
+        </div>
+        
+        <div class="test-section">
+            <div class="test-title">테스트 4: 선택된 잉크 vs 모든 잉크 비교</div>
+            <div id="test4-result" class="result">테스트 중...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 모듈 임포트
+        import { OptimizedMixingEngine } from './core/optimizedMixingEngine.js';
+        import { baseInks } from './core/inkDatabase.js';
+        import { MixingEngine } from './core/mixingEngine.js';
+        
+        // 테스트 1: 모든 농도 포함 확인
+        function test1() {
+            const engine = new OptimizedMixingEngine();
+            const candidates = engine.generateInkCandidates(baseInks, [100, 70, 40], true);
+            
+            let html = '<div class="success">✅ 잉크 후보 생성 성공</div>';
+            html += `<div>총 ${candidates.length}개 잉크 후보:</div>`;
+            
+            // 농도별로 그룹화
+            const by100 = candidates.filter(c => c.concentration === 100);
+            const by70 = candidates.filter(c => c.concentration === 70);
+            const by40 = candidates.filter(c => c.concentration === 40);
+            
+            html += `<div>100% 농도: ${by100.length}개</div>`;
+            html += '<div>';
+            by100.forEach(ink => {
+                html += `<span class="ink-item">${ink.name}</span>`;
+            });
+            html += '</div>';
+            
+            html += `<div>70% 농도 (Satin): ${by70.length}개</div>`;
+            html += '<div>';
+            by70.forEach(ink => {
+                html += `<span class="ink-item satin">${ink.name}</span>`;
+            });
+            html += '</div>';
+            
+            html += `<div>40% 농도 (Satin): ${by40.length}개</div>`;
+            html += '<div>';
+            by40.forEach(ink => {
+                html += `<span class="ink-item satin">${ink.name}</span>`;
+            });
+            html += '</div>';
+            
+            document.getElementById('test1-result').innerHTML = html;
+        }
+        
+        // 테스트 2: 최적 배합 계산
+        function test2() {
+            const engine = new OptimizedMixingEngine();
+            const targetLab = { L: 30, a: 20, b: -60 }; // 파란색
+            
+            const result = engine.findOptimalMix(targetLab, baseInks, {
+                maxInks: 4,
+                preferredConcentrations: [100, 70, 40],
+                includeWhite: true,
+                costWeight: 0.2
+            });
+            
+            const formatted = engine.formatResult(result);
+            
+            let html = '<div class="success">✅ 최적 배합 계산 성공</div>';
+            html += `<div>목표 색상: L:${targetLab.L} a:${targetLab.a} b:${targetLab.b}</div>`;
+            
+            const deltaEClass = formatted.deltaE < 1 ? 'excellent' : 
+                               formatted.deltaE < 2 ? 'good' : 
+                               formatted.deltaE < 5 ? 'fair' : 'poor';
+            
+            html += `<div>품질: ${formatted.quality} <span class="delta-e ${deltaEClass}">ΔE: ${formatted.deltaE}</span></div>`;
+            html += '<div>배합 레시피:</div>';
+            html += '<ul>';
+            formatted.inks.forEach(ink => {
+                const satinText = ink.isSatin ? ' (Satin)' : '';
+                html += `<li>${ink.name}: ${ink.percentage}%${satinText}</li>`;
+            });
+            html += '</ul>';
+            html += `<div>달성 색상: L:${formatted.achievedLab.L.toFixed(1)} a:${formatted.achievedLab.a.toFixed(1)} b:${formatted.achievedLab.b.toFixed(1)}</div>`;
+            html += `<div>예상 비용 지수: ${formatted.cost}</div>`;
+            
+            document.getElementById('test2-result').innerHTML = html;
+        }
+        
+        // 테스트 3: 비용 가중치 적용
+        function test3() {
+            const engine = new OptimizedMixingEngine();
+            const targetLab = { L: 60, a: 30, b: 40 }; // 오렌지색
+            
+            // 낮은 비용 가중치
+            const lowCost = engine.findOptimalMix(targetLab, baseInks, {
+                maxInks: 3,
+                preferredConcentrations: [100, 70, 40],
+                includeWhite: true,
+                costWeight: 0.1
+            });
+            
+            // 높은 비용 가중치
+            const highCost = engine.findOptimalMix(targetLab, baseInks, {
+                maxInks: 3,
+                preferredConcentrations: [100, 70, 40],
+                includeWhite: true,
+                costWeight: 0.9
+            });
+            
+            const lowFormatted = engine.formatResult(lowCost);
+            const highFormatted = engine.formatResult(highCost);
+            
+            let html = '<div class="success">✅ 비용 가중치 테스트 성공</div>';
+            
+            html += '<div><strong>낮은 비용 가중치 (0.1):</strong></div>';
+            html += '<ul>';
+            lowFormatted.inks.forEach(ink => {
+                html += `<li>${ink.name}: ${ink.percentage}%</li>`;
+            });
+            html += '</ul>';
+            html += `<div>비용: ${lowFormatted.cost}, ΔE: ${lowFormatted.deltaE}</div>`;
+            
+            html += '<div><strong>높은 비용 가중치 (0.9):</strong></div>';
+            html += '<ul>';
+            highFormatted.inks.forEach(ink => {
+                html += `<li>${ink.name}: ${ink.percentage}%</li>`;
+            });
+            html += '</ul>';
+            html += `<div>비용: ${highFormatted.cost}, ΔE: ${highFormatted.deltaE}</div>`;
+            
+            const costDiff = (parseFloat(highFormatted.cost) - parseFloat(lowFormatted.cost)).toFixed(2);
+            html += `<div class="${costDiff < 0 ? 'success' : 'error'}">비용 차이: ${costDiff} (높은 가중치일 때 ${costDiff < 0 ? '더 저렴' : '더 비쌈'})</div>`;
+            
+            document.getElementById('test3-result').innerHTML = html;
+        }
+        
+        // 테스트 4: 선택된 잉크 vs 모든 잉크
+        function test4() {
+            const targetLab = { L: 45, a: -20, b: 30 }; // 녹색
+            
+            // 기존 방식 (선택된 잉크만)
+            const oldEngine = new MixingEngine();
+            const selectedInks = ['cyan', 'yellow', 'black'].map(id => {
+                const ink = baseInks.find(i => i.id === id);
+                return ink.concentrations[100]; // 100% 농도만
+            });
+            const oldResult = oldEngine.optimize(targetLab, selectedInks, { method: 'simple' });
+            
+            // 새 방식 (모든 농도)
+            const newEngine = new OptimizedMixingEngine();
+            const newResult = newEngine.findOptimalMix(targetLab, baseInks, {
+                maxInks: 4,
+                preferredConcentrations: [100, 70, 40],
+                includeWhite: false,
+                costWeight: 0.2
+            });
+            const newFormatted = newEngine.formatResult(newResult);
+            
+            let html = '<div class="success">✅ 비교 테스트 성공</div>';
+            
+            html += '<div><strong>기존 방식 (선택된 잉크, 100% 농도만):</strong></div>';
+            html += '<ul>';
+            html += '<li>Cyan 100%: ' + (oldResult.ratios[0] * 100).toFixed(1) + '%</li>';
+            html += '<li>Yellow 100%: ' + (oldResult.ratios[1] * 100).toFixed(1) + '%</li>';
+            html += '<li>Black 100%: ' + (oldResult.ratios[2] * 100).toFixed(1) + '%</li>';
+            html += '</ul>';
+            html += `<div>ΔE: ${oldResult.deltaE.toFixed(2)}</div>`;
+            
+            html += '<div><strong>새 방식 (모든 잉크, 모든 농도):</strong></div>';
+            html += '<ul>';
+            newFormatted.inks.forEach(ink => {
+                const satinText = ink.isSatin ? ' (Satin)' : '';
+                html += `<li>${ink.name}: ${ink.percentage}%${satinText}</li>`;
+            });
+            html += '</ul>';
+            html += `<div>ΔE: ${newFormatted.deltaE}</div>`;
+            
+            const improvement = ((oldResult.deltaE - parseFloat(newFormatted.deltaE)) / oldResult.deltaE * 100).toFixed(1);
+            html += `<div class="success">개선율: ${improvement}% (ΔE ${oldResult.deltaE.toFixed(2)} → ${newFormatted.deltaE})</div>`;
+            
+            document.getElementById('test4-result').innerHTML = html;
+        }
+        
+        // 테스트 실행
+        setTimeout(() => {
+            try {
+                test1();
+                test2();
+                test3();
+                test4();
+            } catch (error) {
+                console.error('테스트 오류:', error);
+            }
+        }, 100);
+    </script>
+</body>
+</html>

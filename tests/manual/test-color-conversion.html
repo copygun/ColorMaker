@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>색상 변환 검증</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .color-box {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #333;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .result {
+            background: #f7f7f7;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #f0f0f0;
+        }
+        .match { background: #d4f4dd; }
+        .mismatch { background: #ffd4d4; }
+    </style>
+</head>
+<body>
+    <h1>🎨 PANTONE 317C 색상 변환 검증</h1>
+    
+    <div class="test-section">
+        <h2>입력 값 (PANTONE 317C - D50/2° 기준)</h2>
+        <ul>
+            <li><strong>Lab:</strong> L=84.5, a=-18.0, b=-7.5</li>
+            <li><strong>예상 HEX:</strong> #B1E4E3 (인쇄 표준)</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>변환 테스트</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // D50/2° 참조 백색점
+        const D50_WHITE = { X: 96.422, Y: 100.000, Z: 82.521 };
+        const D65_WHITE = { X: 95.047, Y: 100.000, Z: 108.883 };
+        
+        // Bradford 변환 행렬 (D50 to D65)
+        const D50_TO_D65 = [
+            [0.9555766, -0.0230393, 0.0631636],
+            [-0.0282895, 1.0099416, 0.0210077],
+            [0.0122982, -0.0204830, 1.3299098]
+        ];
+
+        // Lab to XYZ (D50 기준)
+        function labToXYZ_D50(L, a, b) {
+            const fy = (L + 16) / 116;
+            const fx = a / 500 + fy;
+            const fz = fy - b / 200;
+            
+            const epsilon = 0.008856;
+            const kappa = 903.3;
+            
+            const xr = fx ** 3 > epsilon ? fx ** 3 : (116 * fx - 16) / kappa;
+            const yr = L > kappa * epsilon ? fy ** 3 : L / kappa;
+            const zr = fz ** 3 > epsilon ? fz ** 3 : (116 * fz - 16) / kappa;
+            
+            return {
+                X: xr * D50_WHITE.X,
+                Y: yr * D50_WHITE.Y,
+                Z: zr * D50_WHITE.Z
+            };
+        }
+
+        // XYZ to RGB (sRGB)
+        function xyzToRGB(X, Y, Z, fromD50 = true) {
+            // D50에서 D65로 색순응 변환
+            if (fromD50) {
+                const m = D50_TO_D65;
+                const X65 = m[0][0] * X + m[0][1] * Y + m[0][2] * Z;
+                const Y65 = m[1][0] * X + m[1][1] * Y + m[1][2] * Z;
+                const Z65 = m[2][0] * X + m[2][1] * Y + m[2][2] * Z;
+                X = X65;
+                Y = Y65;
+                Z = Z65;
+            }
+            
+            // XYZ를 0-1 범위로 정규화
+            X = X / 100;
+            Y = Y / 100;
+            Z = Z / 100;
+            
+            // XYZ to linear RGB
+            let r = X * 3.2406 + Y * -1.5372 + Z * -0.4986;
+            let g = X * -0.9689 + Y * 1.8758 + Z * 0.0415;
+            let b = X * 0.0557 + Y * -0.2040 + Z * 1.0570;
+            
+            // Gamma correction
+            r = r > 0.0031308 ? 1.055 * Math.pow(r, 1/2.4) - 0.055 : 12.92 * r;
+            g = g > 0.0031308 ? 1.055 * Math.pow(g, 1/2.4) - 0.055 : 12.92 * g;
+            b = b > 0.0031308 ? 1.055 * Math.pow(b, 1/2.4) - 0.055 : 12.92 * b;
+            
+            return {
+                r: Math.max(0, Math.min(255, Math.round(r * 255))),
+                g: Math.max(0, Math.min(255, Math.round(g * 255))),
+                b: Math.max(0, Math.min(255, Math.round(b * 255)))
+            };
+        }
+
+        // RGB to HSL
+        function rgbToHSL(r, g, b) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            const l = (max + min) / 2;
+            
+            let h = 0;
+            let s = 0;
+            
+            if (max !== min) {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                
+                if (max === r) {
+                    h = ((g - b) / d + (g < b ? 6 : 0));
+                } else if (max === g) {
+                    h = ((b - r) / d + 2);
+                } else {
+                    h = ((r - g) / d + 4);
+                }
+            }
+            
+            h = Math.round(h * 60);
+            if (h < 0) h += 360;
+            s = Math.round(s * 100);
+            const lPercent = Math.round(l * 100);
+            
+            return { h, s, l: lPercent };
+        }
+
+        // RGB to Hex
+        function rgbToHex(r, g, b) {
+            const toHex = n => n.toString(16).padStart(2, '0');
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+        }
+
+        // 테스트 실행
+        function runTest() {
+            const L = 84.5, a = -18.0, b = -7.5;
+            
+            // 1. Lab to XYZ (D50)
+            const xyz = labToXYZ_D50(L, a, b);
+            
+            // 2. XYZ to RGB (with D50 to D65 adaptation)
+            const rgb = xyzToRGB(xyz.X, xyz.Y, xyz.Z, true);
+            
+            // 3. RGB to HSL
+            const hsl = rgbToHSL(rgb.r, rgb.g, rgb.b);
+            
+            // 4. RGB to Hex
+            const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+            
+            // 결과 표시
+            const results = `
+                <h3>변환 결과</h3>
+                <table>
+                    <tr>
+                        <th>색상 공간</th>
+                        <th>계산값</th>
+                        <th>예상값/참고값</th>
+                        <th>비교</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Lab (입력)</strong></td>
+                        <td>L=${L}, a=${a}, b=${b}</td>
+                        <td>D50/2° 기준</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>XYZ (D50)</strong></td>
+                        <td>X=${xyz.X.toFixed(2)}, Y=${xyz.Y.toFixed(2)}, Z=${xyz.Z.toFixed(2)}</td>
+                        <td>중간 계산</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RGB</strong></td>
+                        <td>R=${rgb.r}, G=${rgb.g}, B=${rgb.b}</td>
+                        <td>sRGB (D65 adapted)</td>
+                        <td>-</td>
+                    </tr>
+                    <tr class="${hex === '#B1E4E3' ? 'match' : 'mismatch'}">
+                        <td><strong>HEX</strong></td>
+                        <td>${hex}</td>
+                        <td>#B1E4E3 (PANTONE 공식)</td>
+                        <td>${hex === '#B1E4E3' ? '✅ 일치' : '❌ 불일치'}</td>
+                    </tr>
+                    <tr class="${Math.abs(hsl.h - 178) < 5 ? 'match' : 'mismatch'}">
+                        <td><strong>HSL</strong></td>
+                        <td>H=${hsl.h}°, S=${hsl.s}%, L=${hsl.l}%</td>
+                        <td>H≈178-181°, S≈51%, L≈78%</td>
+                        <td>${Math.abs(hsl.h - 180) < 5 ? '✅ 정상 범위' : '⚠️ 확인 필요'}</td>
+                    </tr>
+                </table>
+                
+                <h3>색상 미리보기</h3>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <div>
+                        <div class="color-box" style="background-color: ${hex};"></div>
+                        <p>계산된 색상<br/>${hex}</p>
+                    </div>
+                    <div>
+                        <div class="color-box" style="background-color: #B1E4E3;"></div>
+                        <p>PANTONE 317C 공식<br/>#B1E4E3</p>
+                    </div>
+                    <div>
+                        <div class="color-box" style="background-color: #ACE3E4;"></div>
+                        <p>구글 검색 결과<br/>#ACE3E4</p>
+                    </div>
+                </div>
+                
+                <h3>분석</h3>
+                <div class="result">
+                    <p><strong>HSL 변환 검증:</strong></p>
+                    <ul>
+                        <li>계산된 HSL: H=${hsl.h}°, S=${hsl.s}%, L=${hsl.l}%</li>
+                        <li>구글 HSL (181°, 51%, 78%)과 ${Math.abs(hsl.h - 181) < 3 ? '거의 일치' : '차이 있음'}</li>
+                        <li>차이 원인: ${hsl.h < 180 ? 'Cyan 영역에서 녹색 쪽' : 'Cyan 영역에서 청색 쪽'}으로 계산됨</li>
+                    </ul>
+                    
+                    <p><strong>HEX 차이 분석:</strong></p>
+                    <ul>
+                        <li>계산값: ${hex}</li>
+                        <li>구글값: #ACE3E4</li>
+                        <li>차이: RGB에서 약간의 차이 (특히 R 채널)</li>
+                        <li>원인: D50→D65 색순응 변환 또는 감마 보정 차이</li>
+                    </ul>
+                </div>
+            `;
+            
+            document.getElementById('test-results').innerHTML = results;
+        }
+        
+        // 페이지 로드 시 테스트 실행
+        window.onload = runTest;
+    </script>
+</body>
+</html>

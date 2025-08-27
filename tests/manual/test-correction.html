@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>색상 보정 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f7fafc;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            color: red;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+        }
+        .success {
+            color: green;
+            background: #f0fff4;
+            border: 1px solid #9ae6b4;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 색상 보정 기능 테스트</h1>
+    
+    <div class="test-section">
+        <h2>1. InkDatabase 테스트</h2>
+        <button onclick="testInkDatabase()">잉크 데이터베이스 테스트</button>
+        <div id="inkdb-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. CorrectionEngine 테스트</h2>
+        <button onclick="testCorrectionEngine()">보정 엔진 테스트</button>
+        <div id="correction-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 통합 테스트</h2>
+        <button onclick="testIntegration()">전체 흐름 테스트</button>
+        <div id="integration-result" class="result"></div>
+    </div>
+
+    <script type="module">
+        // 모듈 로드
+        import inkDB from './core/inkDatabase.js';
+        import CorrectionEngine from './core/correctionEngine.js';
+        
+        window.inkDB = inkDB;
+        window.CorrectionEngine = CorrectionEngine;
+        
+        window.testInkDatabase = function() {
+            const resultDiv = document.getElementById('inkdb-result');
+            try {
+                // 모든 잉크 가져오기
+                const allInks = inkDB.getAllInks();
+                resultDiv.innerHTML = `✅ 잉크 데이터베이스 정상 작동\n`;
+                resultDiv.innerHTML += `총 잉크 수: ${allInks.length}개\n`;
+                resultDiv.innerHTML += `베이스 잉크: ${inkDB.baseInks.length}개\n`;
+                resultDiv.innerHTML += `메탈릭 잉크: ${inkDB.metallicInks.length}개\n`;
+                resultDiv.innerHTML += `커스텀 잉크: ${inkDB.customInks.length}개\n\n`;
+                
+                // 샘플 잉크 정보
+                if (allInks.length > 0) {
+                    const sampleInk = allInks[0];
+                    resultDiv.innerHTML += `샘플 잉크: ${sampleInk.name} (${sampleInk.id})\n`;
+                    resultDiv.innerHTML += `농도 정보: ${JSON.stringify(sampleInk.concentrations[100])}\n`;
+                }
+                
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 오류 발생: ${error.message}\n${error.stack}`;
+                resultDiv.className = 'result error';
+            }
+        };
+        
+        window.testCorrectionEngine = function() {
+            const resultDiv = document.getElementById('correction-result');
+            try {
+                const engine = new CorrectionEngine();
+                
+                // 테스트 데이터
+                const targetLab = { L: 50, a: 20, b: 30 };
+                const actualLab = { L: 48, a: 18, b: 28 };
+                const currentRecipe = [
+                    { inkId: 'cyan', ratio: 30, concentration: 100 },
+                    { inkId: 'magenta', ratio: 40, concentration: 100 },
+                    { inkId: 'yellow', ratio: 30, concentration: 100 }
+                ];
+                const availableInks = inkDB.getAllInks();
+                
+                // 분석 실행
+                const analysis = engine.analyzeCorrection(
+                    targetLab,
+                    actualLab,
+                    currentRecipe,
+                    availableInks
+                );
+                
+                resultDiv.innerHTML = `✅ 보정 엔진 정상 작동\n`;
+                resultDiv.innerHTML += `\n색차 분석 결과:\n`;
+                resultDiv.innerHTML += `Delta E: ${analysis.deltaE.toFixed(2)}\n`;
+                resultDiv.innerHTML += `ΔL: ${analysis.colorDifference.dL.toFixed(2)}\n`;
+                resultDiv.innerHTML += `Δa: ${analysis.colorDifference.da.toFixed(2)}\n`;
+                resultDiv.innerHTML += `Δb: ${analysis.colorDifference.db.toFixed(2)}\n`;
+                resultDiv.innerHTML += `\n보정 가능 여부: ${analysis.feasibility.isPossible ? '가능' : '불가능'}\n`;
+                resultDiv.innerHTML += `이유: ${analysis.feasibility.reason}\n`;
+                
+                if (analysis.feasibility.correctionInks) {
+                    resultDiv.innerHTML += `\n추천 보정 잉크: ${analysis.feasibility.correctionInks.length}개\n`;
+                    analysis.feasibility.correctionInks.forEach(ink => {
+                        resultDiv.innerHTML += `  - ${ink.name}: 적합도 ${ink.suitability.toFixed(2)}\n`;
+                    });
+                }
+                
+                resultDiv.className = 'result success';
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 오류 발생: ${error.message}\n${error.stack}`;
+                resultDiv.className = 'result error';
+            }
+        };
+        
+        window.testIntegration = function() {
+            const resultDiv = document.getElementById('integration-result');
+            try {
+                const engine = new CorrectionEngine();
+                
+                // 실제 시나리오 테스트
+                const targetLab = { L: 60, a: 35, b: 45 };  // 목표: 밝은 오렌지
+                const actualLab = { L: 55, a: 30, b: 40 };  // 실제: 약간 어둡고 채도 낮음
+                const currentRecipe = [
+                    { inkId: 'magenta', ratio: 45, concentration: 100 },
+                    { inkId: 'yellow', ratio: 55, concentration: 100 }
+                ];
+                const availableInks = inkDB.getAllInks();
+                
+                // 1. 색차 분석
+                const analysis = engine.analyzeCorrection(
+                    targetLab,
+                    actualLab,
+                    currentRecipe,
+                    availableInks
+                );
+                
+                resultDiv.innerHTML = `🎯 통합 테스트 시나리오\n`;
+                resultDiv.innerHTML += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                resultDiv.innerHTML += `\n1️⃣ 목표 색상: L=${targetLab.L}, a=${targetLab.a}, b=${targetLab.b}\n`;
+                resultDiv.innerHTML += `2️⃣ 실제 인쇄: L=${actualLab.L}, a=${actualLab.a}, b=${actualLab.b}\n`;
+                resultDiv.innerHTML += `3️⃣ 색차 (ΔE): ${analysis.deltaE.toFixed(2)}\n`;
+                
+                // 2. 보정 방향 판단
+                resultDiv.innerHTML += `\n📊 보정 방향 분석:\n`;
+                const dir = analysis.correctionDirection;
+                if (dir.needsBrighter) resultDiv.innerHTML += `  • 밝기 증가 필요 (+${analysis.colorDifference.dL.toFixed(1)})\n`;
+                if (dir.needsMoreRed) resultDiv.innerHTML += `  • 적색 보강 필요 (+${analysis.colorDifference.da.toFixed(1)})\n`;
+                if (dir.needsMoreYellow) resultDiv.innerHTML += `  • 황색 보강 필요 (+${analysis.colorDifference.db.toFixed(1)})\n`;
+                
+                // 3. 보정 가능성 평가
+                resultDiv.innerHTML += `\n🔍 보정 가능성 평가:\n`;
+                if (analysis.feasibility.isPossible) {
+                    resultDiv.innerHTML += `  ✅ 보정 가능 (신뢰도: ${(analysis.feasibility.confidence * 100).toFixed(0)}%)\n`;
+                    
+                    // 4. 보정 레시피 계산
+                    if (analysis.feasibility.correctionInks && analysis.feasibility.correctionInks.length > 0) {
+                        const corrections = engine.calculateCorrectionRecipe(
+                            targetLab,
+                            actualLab,
+                            currentRecipe,
+                            analysis.feasibility.correctionInks
+                        );
+                        
+                        resultDiv.innerHTML += `\n💡 보정 제안:\n`;
+                        corrections.forEach((corr, idx) => {
+                            resultDiv.innerHTML += `  ${idx + 1}. ${corr.name}: +${corr.addAmount.toFixed(1)}%\n`;
+                            resultDiv.innerHTML += `     예상 변화: ΔL=${corr.expectedImpact.dL.toFixed(1)}, `;
+                            resultDiv.innerHTML += `Δa=${corr.expectedImpact.da.toFixed(1)}, `;
+                            resultDiv.innerHTML += `Δb=${corr.expectedImpact.db.toFixed(1)}\n`;
+                        });
+                    }
+                } else {
+                    resultDiv.innerHTML += `  ❌ 보정 불가능\n`;
+                    resultDiv.innerHTML += `  이유: ${analysis.feasibility.reason}\n`;
+                    resultDiv.innerHTML += `  권장사항: ${analysis.feasibility.recommendation}\n`;
+                    
+                    if (analysis.feasibility.suggestedInks) {
+                        resultDiv.innerHTML += `\n  특수 잉크 추천:\n`;
+                        analysis.feasibility.suggestedInks.forEach(ink => {
+                            resultDiv.innerHTML += `    • ${ink.type}: ${ink.reason}\n`;
+                        });
+                    }
+                }
+                
+                resultDiv.innerHTML += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                resultDiv.innerHTML += `✅ 모든 테스트 통과!`;
+                resultDiv.className = 'result success';
+                
+            } catch (error) {
+                resultDiv.innerHTML = `❌ 오류 발생: ${error.message}\n${error.stack}`;
+                resultDiv.className = 'result error';
+            }
+        };
+    </script>
+</body>
+</html>

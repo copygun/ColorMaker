@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>MEDIUM 잉크 효과 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .color-box {
+            width: 100%;
+            height: 100px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .recipe-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .comparison-chart {
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background: #34495e;
+            color: white;
+        }
+        .medium-effect {
+            background: #e8f4fd;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .delta-e {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .delta-e.excellent { background: #d4f4dd; color: #27ae60; }
+        .delta-e.good { background: #fff3cd; color: #f39c12; }
+        .delta-e.poor { background: #ffd4d4; color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <h1>🧪 MEDIUM 잉크 효과 테스트</h1>
+    
+    <div class="controls">
+        <h3>테스트 설정</h3>
+        <label>
+            MEDIUM 비율: <span id="medium-value">0</span>%
+            <input type="range" id="medium-ratio" min="0" max="50" value="0" step="5">
+        </label>
+        <button onclick="runTest()">테스트 실행</button>
+    </div>
+    
+    <div class="test-grid" id="test-results"></div>
+    
+    <div class="comparison-chart">
+        <h3>MEDIUM 효과 분석</h3>
+        <div id="analysis"></div>
+    </div>
+
+    <script type="module">
+        import { AdvancedMixingEngine } from './core/advancedMixingEngine.js';
+        import { ColorScience } from './core/colorScience.js';
+        
+        // 테스트 색상들
+        const testColors = [
+            { name: 'PANTONE 317C (Cyan계열)', target: { L: 84.5, a: -18.0, b: -7.5 } },
+            { name: 'PANTONE 185C (Red계열)', target: { L: 53, a: 70, b: 48 } },
+            { name: 'PANTONE 354C (Green계열)', target: { L: 80, a: -50, b: 40 } }
+        ];
+        
+        // 베이스 잉크
+        const baseInks = [
+            { id: 'cyan', L: 55, a: -37, b: -50, type: 'spot', name: 'Cyan' },
+            { id: 'magenta', L: 48, a: 74, b: -3, type: 'spot', name: 'Magenta' },
+            { id: 'yellow', L: 89, a: -5, b: 93, type: 'spot', name: 'Yellow' },
+            { id: 'black', L: 16, a: 0, b: 0, type: 'spot', name: 'Black' },
+            { id: 'medium', L: 96, a: 0, b: 0, type: 'medium', name: 'MEDIUM' }
+        ];
+        
+        const slider = document.getElementById('medium-ratio');
+        const valueDisplay = document.getElementById('medium-value');
+        
+        slider.addEventListener('input', (e) => {
+            valueDisplay.textContent = e.target.value;
+        });
+        
+        window.runTest = async function() {
+            const mediumRatio = parseInt(slider.value) / 100;
+            const resultsDiv = document.getElementById('test-results');
+            const analysisDiv = document.getElementById('analysis');
+            
+            resultsDiv.innerHTML = '';
+            
+            const engine = new AdvancedMixingEngine({
+                printMethod: 'offset',
+                substrateType: 'white_coated',
+                enableKubelkaMunk: true,
+                enableDotGain: true,
+                enableSubstrate: true
+            });
+            
+            const results = [];
+            
+            for (const testCase of testColors) {
+                // MEDIUM 없이 계산
+                const withoutMedium = await engine.optimize(
+                    testCase.target,
+                    baseInks.filter(ink => ink.id !== 'medium'),
+                    { maxIterations: 100, tolerance: 0.5 }
+                );
+                
+                // MEDIUM 포함 계산
+                let inksWithMedium = [...baseInks];
+                let ratiosWithMedium;
+                
+                if (mediumRatio > 0) {
+                    // 기존 최적화 결과에서 비율 조정
+                    const colorInkRatio = 1 - mediumRatio;
+                    ratiosWithMedium = [
+                        ...withoutMedium.ratios.map(r => r * colorInkRatio),
+                        mediumRatio
+                    ];
+                    
+                    // 재계산
+                    const mixedWithMedium = engine.mixInks(inksWithMedium, ratiosWithMedium);
+                    const deltaEWithMedium = ColorScience.calculateDeltaE00(
+                        testCase.target.L, testCase.target.a, testCase.target.b,
+                        mixedWithMedium.L, mixedWithMedium.a, mixedWithMedium.b
+                    );
+                    
+                    results.push({
+                        name: testCase.name,
+                        target: testCase.target,
+                        withoutMedium: withoutMedium,
+                        withMedium: {
+                            mixed: mixedWithMedium,
+                            deltaE: deltaEWithMedium,
+                            ratios: ratiosWithMedium
+                        }
+                    });
+                } else {
+                    results.push({
+                        name: testCase.name,
+                        target: testCase.target,
+                        withoutMedium: withoutMedium,
+                        withMedium: withoutMedium
+                    });
+                }
+                
+                // 결과 카드 생성
+                createResultCard(results[results.length - 1], resultsDiv);
+            }
+            
+            // 분석 테이블 생성
+            createAnalysisTable(results, mediumRatio, analysisDiv);
+        };
+        
+        function createResultCard(result, container) {
+            const card = document.createElement('div');
+            card.className = 'test-card';
+            
+            const withoutRgb = ColorScience.labToRgb(
+                result.withoutMedium.mixed.L,
+                result.withoutMedium.mixed.a,
+                result.withoutMedium.mixed.b
+            );
+            
+            const withRgb = ColorScience.labToRgb(
+                result.withMedium.mixed.L,
+                result.withMedium.mixed.a,
+                result.withMedium.mixed.b
+            );
+            
+            const targetRgb = ColorScience.labToRgb(
+                result.target.L,
+                result.target.a,
+                result.target.b
+            );
+            
+            card.innerHTML = `
+                <h3>${result.name}</h3>
+                
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <h4>목표 색상</h4>
+                        <div class="color-box" style="background-color: rgb(${targetRgb.r}, ${targetRgb.g}, ${targetRgb.b});"></div>
+                        <div class="recipe-info">
+                            L: ${result.target.L.toFixed(1)}<br>
+                            a: ${result.target.a.toFixed(1)}<br>
+                            b: ${result.target.b.toFixed(1)}
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <h4>MEDIUM 없이</h4>
+                        <div class="color-box" style="background-color: rgb(${withoutRgb.r}, ${withoutRgb.g}, ${withoutRgb.b});"></div>
+                        <div class="recipe-info">
+                            L: ${result.withoutMedium.mixed.L.toFixed(1)}<br>
+                            a: ${result.withoutMedium.mixed.a.toFixed(1)}<br>
+                            b: ${result.withoutMedium.mixed.b.toFixed(1)}<br>
+                            <span class="delta-e ${getDeltaEClass(result.withoutMedium.deltaE)}">
+                                ΔE: ${result.withoutMedium.deltaE.toFixed(2)}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div style="flex: 1;">
+                        <h4>MEDIUM 포함</h4>
+                        <div class="color-box" style="background-color: rgb(${withRgb.r}, ${withRgb.g}, ${withRgb.b});"></div>
+                        <div class="recipe-info">
+                            L: ${result.withMedium.mixed.L.toFixed(1)}<br>
+                            a: ${result.withMedium.mixed.a.toFixed(1)}<br>
+                            b: ${result.withMedium.mixed.b.toFixed(1)}<br>
+                            <span class="delta-e ${getDeltaEClass(result.withMedium.deltaE)}">
+                                ΔE: ${result.withMedium.deltaE.toFixed(2)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(card);
+        }
+        
+        function createAnalysisTable(results, mediumRatio, container) {
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>색상</th>
+                            <th>항목</th>
+                            <th>MEDIUM 없이</th>
+                            <th>MEDIUM ${(mediumRatio * 100).toFixed(0)}%</th>
+                            <th>변화량</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            for (const result of results) {
+                const deltaL = result.withMedium.mixed.L - result.withoutMedium.mixed.L;
+                const deltaA = result.withMedium.mixed.a - result.withoutMedium.mixed.a;
+                const deltaB = result.withMedium.mixed.b - result.withoutMedium.mixed.b;
+                const deltaDeltaE = result.withMedium.deltaE - result.withoutMedium.deltaE;
+                
+                html += `
+                    <tr>
+                        <td rowspan="5">${result.name}</td>
+                        <td>L (명도)</td>
+                        <td>${result.withoutMedium.mixed.L.toFixed(1)}</td>
+                        <td class="medium-effect">${result.withMedium.mixed.L.toFixed(1)}</td>
+                        <td>${deltaL > 0 ? '+' : ''}${deltaL.toFixed(1)}</td>
+                    </tr>
+                    <tr>
+                        <td>a (Red-Green)</td>
+                        <td>${result.withoutMedium.mixed.a.toFixed(1)}</td>
+                        <td class="medium-effect">${result.withMedium.mixed.a.toFixed(1)}</td>
+                        <td>${deltaA > 0 ? '+' : ''}${deltaA.toFixed(1)}</td>
+                    </tr>
+                    <tr>
+                        <td>b (Blue-Yellow)</td>
+                        <td>${result.withoutMedium.mixed.b.toFixed(1)}</td>
+                        <td class="medium-effect">${result.withMedium.mixed.b.toFixed(1)}</td>
+                        <td>${deltaB > 0 ? '+' : ''}${deltaB.toFixed(1)}</td>
+                    </tr>
+                    <tr>
+                        <td>채도</td>
+                        <td>${Math.sqrt(result.withoutMedium.mixed.a**2 + result.withoutMedium.mixed.b**2).toFixed(1)}</td>
+                        <td class="medium-effect">${Math.sqrt(result.withMedium.mixed.a**2 + result.withMedium.mixed.b**2).toFixed(1)}</td>
+                        <td>-${(Math.sqrt(result.withoutMedium.mixed.a**2 + result.withoutMedium.mixed.b**2) - Math.sqrt(result.withMedium.mixed.a**2 + result.withMedium.mixed.b**2)).toFixed(1)}</td>
+                    </tr>
+                    <tr>
+                        <td>ΔE</td>
+                        <td>${result.withoutMedium.deltaE.toFixed(2)}</td>
+                        <td class="medium-effect">${result.withMedium.deltaE.toFixed(2)}</td>
+                        <td>${deltaDeltaE > 0 ? '+' : ''}${deltaDeltaE.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+            
+            html += `
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+                    <h4>📊 MEDIUM ${(mediumRatio * 100).toFixed(0)}% 효과 요약</h4>
+                    <ul>
+                        <li><strong>명도 변화:</strong> 평균 +${(results.reduce((sum, r) => sum + (r.withMedium.mixed.L - r.withoutMedium.mixed.L), 0) / results.length).toFixed(1)} (밝아짐)</li>
+                        <li><strong>채도 변화:</strong> 평균 -${(results.reduce((sum, r) => {
+                            const satWithout = Math.sqrt(r.withoutMedium.mixed.a**2 + r.withoutMedium.mixed.b**2);
+                            const satWith = Math.sqrt(r.withMedium.mixed.a**2 + r.withMedium.mixed.b**2);
+                            return sum + (satWithout - satWith);
+                        }, 0) / results.length).toFixed(1)} (채도 감소)</li>
+                        <li><strong>색차 변화:</strong> 평균 ${(results.reduce((sum, r) => sum + (r.withMedium.deltaE - r.withoutMedium.deltaE), 0) / results.length).toFixed(2)} (정확도 ${results.reduce((sum, r) => sum + (r.withMedium.deltaE - r.withoutMedium.deltaE), 0) / results.length > 0 ? '감소' : '증가'})</li>
+                    </ul>
+                    
+                    <h4>💡 MEDIUM 사용 가이드</h4>
+                    <ul>
+                        <li><strong>5-10%:</strong> 미세한 색상 조정, 광택 개선</li>
+                        <li><strong>10-20%:</strong> 중간 정도의 희석, 투명도 증가</li>
+                        <li><strong>20-30%:</strong> 강한 희석 효과, 파스텔톤 생성</li>
+                        <li><strong>30% 이상:</strong> 매우 연한 색상, 높은 투명도</li>
+                    </ul>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        function getDeltaEClass(deltaE) {
+            if (deltaE < 1.5) return 'excellent';
+            if (deltaE < 3) return 'good';
+            return 'poor';
+        }
+        
+        // 초기 실행
+        window.addEventListener('load', () => {
+            runTest();
+        });
+    </script>
+</body>
+</html>

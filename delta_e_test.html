@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delta E 2000 계산 검증</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .input-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+        .result-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 5px;
+            border: 1px solid #4CAF50;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff;
+            border-left: 3px solid #2196F3;
+        }
+        .value {
+            color: #2196F3;
+            font-weight: bold;
+        }
+        .formula {
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 3px;
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .calc-box {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .calc-box h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .highlight {
+            background: yellow;
+            padding: 2px 5px;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Delta E 2000 계산 단계별 검증</h1>
+        
+        <div class="input-section">
+            <h2>입력값</h2>
+            <p><strong>목표값 (Reference):</strong> L* = <span class="value">43.7</span>, a* = <span class="value">-31.9</span>, b* = <span class="value">2.8</span></p>
+            <p><strong>시료값 (Sample):</strong> L* = <span class="value">43.9</span>, a* = <span class="value">-27.3</span>, b* = <span class="value">1.8</span></p>
+            <p><strong>차이값:</strong> ΔL* = <span class="value">0.2</span>, Δa* = <span class="value">4.6</span>, Δb* = <span class="value">-1.0</span></p>
+        </div>
+        
+        <button onclick="calculateBothMethods()">계산 실행 및 비교</button>
+        
+        <div id="results"></div>
+    </div>
+    
+    <script>
+        // 현재 코드의 Delta E 2000 계산 (기존 함수)
+        function calculateDeltaE00_Original(L1, a1, b1, L2, a2, b2) {
+            const kL = 1, kC = 1, kH = 1;
+            
+            // Calculate C and h
+            const C1 = Math.sqrt(a1 * a1 + b1 * b1);
+            const C2 = Math.sqrt(a2 * a2 + b2 * b2);
+            const Cb = (C1 + C2) / 2;
+            
+            const G = 0.5 * (1 - Math.sqrt(Math.pow(Cb, 7) / (Math.pow(Cb, 7) + Math.pow(25, 7))));
+            const ap1 = a1 * (1 + G);
+            const ap2 = a2 * (1 + G);
+            
+            const Cp1 = Math.sqrt(ap1 * ap1 + b1 * b1);
+            const Cp2 = Math.sqrt(ap2 * ap2 + b2 * b2);
+            
+            let hp1 = Math.atan2(b1, ap1) * 180 / Math.PI;
+            if (hp1 < 0) hp1 += 360;
+            let hp2 = Math.atan2(b2, ap2) * 180 / Math.PI;
+            if (hp2 < 0) hp2 += 360;
+            
+            // Calculate differences
+            const dLp = L2 - L1;
+            const dCp = Cp2 - Cp1;
+            
+            let dhp = hp2 - hp1;
+            if (Math.abs(dhp) > 180) {
+                if (dhp > 180) dhp -= 360;
+                else dhp += 360;
+            }
+            
+            const dHp = 2 * Math.sqrt(Cp1 * Cp2) * Math.sin((dhp * Math.PI / 180) / 2);
+            
+            // Calculate averages
+            const Lbp = (L1 + L2) / 2;
+            const Cbp = (Cp1 + Cp2) / 2;
+            
+            let hbp = (hp1 + hp2) / 2;
+            if (Math.abs(hp1 - hp2) > 180) {
+                if (hbp < 180) hbp += 180;
+                else hbp -= 180;
+            }
+            
+            // Calculate T
+            const T = 1 - 0.17 * Math.cos((hbp - 30) * Math.PI / 180) +
+                     0.24 * Math.cos(2 * hbp * Math.PI / 180) +
+                     0.32 * Math.cos((3 * hbp + 6) * Math.PI / 180) -
+                     0.20 * Math.cos((4 * hbp - 63) * Math.PI / 180);
+            
+            // Calculate S factors
+            const SL = 1 + (0.015 * Math.pow(Lbp - 50, 2)) / Math.sqrt(20 + Math.pow(Lbp - 50, 2));
+            const SC = 1 + 0.045 * Cbp;
+            const SH = 1 + 0.015 * Cbp * T;
+            
+            // Calculate RT
+            const dTheta = 30 * Math.exp(-Math.pow((hbp - 275) / 25, 2));
+            const RC = 2 * Math.sqrt(Math.pow(Cbp, 7) / (Math.pow(Cbp, 7) + Math.pow(25, 7)));
+            const RT = -RC * Math.sin(2 * dTheta * Math.PI / 180);
+            
+            // Final calculation
+            const dE00 = Math.sqrt(
+                Math.pow(dLp / (kL * SL), 2) +
+                Math.pow(dCp / (kC * SC), 2) +
+                Math.pow(dHp / (kH * SH), 2) +
+                RT * (dCp / (kC * SC)) * (dHp / (kH * SH))
+            );
+            
+            return {
+                deltaE: dE00,
+                steps: {
+                    C1, C2, Cb, G, ap1, ap2, Cp1, Cp2, hp1, hp2,
+                    dLp, dCp, dhp, dHp, Lbp, Cbp, hbp, T, SL, SC, SH,
+                    dTheta, RC, RT
+                }
+            };
+        }
+        
+        // 표준 Delta E 2000 계산 (더 정확한 구현)
+        function calculateDeltaE00_Standard(L1, a1, b1, L2, a2, b2) {
+            // Weight factors
+            const kL = 1.0;
+            const kC = 1.0;
+            const kH = 1.0;
+            
+            // Step 1: Calculate C*ab
+            const C1_ab = Math.sqrt(a1 * a1 + b1 * b1);
+            const C2_ab = Math.sqrt(a2 * a2 + b2 * b2);
+            
+            // Step 2: Calculate C*ab average
+            const C_ab_avg = (C1_ab + C2_ab) / 2;
+            
+            // Step 3: Calculate G
+            const C7_avg = Math.pow(C_ab_avg, 7);
+            const G = 0.5 * (1 - Math.sqrt(C7_avg / (C7_avg + Math.pow(25, 7))));
+            
+            // Step 4: Calculate a'
+            const a1_prime = a1 * (1 + G);
+            const a2_prime = a2 * (1 + G);
+            
+            // Step 5: Calculate C' and h'
+            const C1_prime = Math.sqrt(a1_prime * a1_prime + b1 * b1);
+            const C2_prime = Math.sqrt(a2_prime * a2_prime + b2 * b2);
+            
+            // Calculate h' in degrees
+            let h1_prime = Math.atan2(b1, a1_prime) * 180 / Math.PI;
+            if (h1_prime < 0) h1_prime += 360;
+            
+            let h2_prime = Math.atan2(b2, a2_prime) * 180 / Math.PI;
+            if (h2_prime < 0) h2_prime += 360;
+            
+            // Step 6: Calculate ΔL', ΔC', Δh', ΔH'
+            const delta_L_prime = L2 - L1;
+            const delta_C_prime = C2_prime - C1_prime;
+            
+            let delta_h_prime;
+            const C_product = C1_prime * C2_prime;
+            
+            if (C_product === 0) {
+                delta_h_prime = 0;
+            } else {
+                delta_h_prime = h2_prime - h1_prime;
+                if (delta_h_prime > 180) {
+                    delta_h_prime -= 360;
+                } else if (delta_h_prime < -180) {
+                    delta_h_prime += 360;
+                }
+            }
+            
+            const delta_H_prime = 2 * Math.sqrt(C_product) * Math.sin((delta_h_prime * Math.PI / 180) / 2);
+            
+            // Step 7: Calculate averages
+            const L_avg = (L1 + L2) / 2;
+            const C_prime_avg = (C1_prime + C2_prime) / 2;
+            
+            let h_prime_avg;
+            if (C_product === 0) {
+                h_prime_avg = h1_prime + h2_prime;
+            } else {
+                if (Math.abs(h1_prime - h2_prime) <= 180) {
+                    h_prime_avg = (h1_prime + h2_prime) / 2;
+                } else {
+                    if (h1_prime + h2_prime < 360) {
+                        h_prime_avg = (h1_prime + h2_prime + 360) / 2;
+                    } else {
+                        h_prime_avg = (h1_prime + h2_prime - 360) / 2;
+                    }
+                }
+            }
+            
+            // Step 8: Calculate T
+            const T = 1 - 
+                0.17 * Math.cos((h_prime_avg - 30) * Math.PI / 180) +
+                0.24 * Math.cos((2 * h_prime_avg) * Math.PI / 180) +
+                0.32 * Math.cos((3 * h_prime_avg + 6) * Math.PI / 180) -
+                0.20 * Math.cos((4 * h_prime_avg - 63) * Math.PI / 180);
+            
+            // Step 9: Calculate SL, SC, SH
+            const delta_L_50_sq = Math.pow(L_avg - 50, 2);
+            const S_L = 1 + (0.015 * delta_L_50_sq) / Math.sqrt(20 + delta_L_50_sq);
+            const S_C = 1 + 0.045 * C_prime_avg;
+            const S_H = 1 + 0.015 * C_prime_avg * T;
+            
+            // Step 10: Calculate RT
+            const delta_theta = 30 * Math.exp(-Math.pow((h_prime_avg - 275) / 25, 2));
+            const C_prime_avg_7 = Math.pow(C_prime_avg, 7);
+            const R_C = 2 * Math.sqrt(C_prime_avg_7 / (C_prime_avg_7 + Math.pow(25, 7)));
+            const R_T = -R_C * Math.sin((2 * delta_theta) * Math.PI / 180);
+            
+            // Step 11: Calculate ΔE00
+            const term1 = Math.pow(delta_L_prime / (kL * S_L), 2);
+            const term2 = Math.pow(delta_C_prime / (kC * S_C), 2);
+            const term3 = Math.pow(delta_H_prime / (kH * S_H), 2);
+            const term4 = R_T * (delta_C_prime / (kC * S_C)) * (delta_H_prime / (kH * S_H));
+            
+            const deltaE00 = Math.sqrt(term1 + term2 + term3 + term4);
+            
+            return {
+                deltaE: deltaE00,
+                steps: {
+                    C1_ab, C2_ab, C_ab_avg, G,
+                    a1_prime, a2_prime, C1_prime, C2_prime,
+                    h1_prime, h2_prime, 
+                    delta_L_prime, delta_C_prime, delta_h_prime, delta_H_prime,
+                    L_avg, C_prime_avg, h_prime_avg,
+                    T, S_L, S_C, S_H,
+                    delta_theta, R_C, R_T,
+                    term1, term2, term3, term4
+                }
+            };
+        }
+        
+        function calculateBothMethods() {
+            // 입력값
+            const L1 = 43.7, a1 = -31.9, b1 = 2.8;  // 목표값
+            const L2 = 43.9, a2 = -27.3, b2 = 1.8;  // 시료값
+            
+            // 두 방법으로 계산
+            const result1 = calculateDeltaE00_Original(L1, a1, b1, L2, a2, b2);
+            const result2 = calculateDeltaE00_Standard(L1, a1, b1, L2, a2, b2);
+            
+            // 결과 표시
+            const resultsDiv = document.getElementById('results');
+            
+            resultsDiv.innerHTML = `
+                <div class="result-section">
+                    <h2>📊 계산 결과 비교</h2>
+                    <p><strong>현재 코드 결과:</strong> <span class="value">${result1.deltaE.toFixed(4)}</span></p>
+                    <p><strong>표준 구현 결과:</strong> <span class="value">${result2.deltaE.toFixed(4)}</span></p>
+                    <p><strong>측정기 앱 결과:</strong> <span class="value">2.8000</span></p>
+                    <p><strong>차이:</strong> 
+                        현재 코드 vs 측정기: <span class="${Math.abs(result1.deltaE - 2.8) > 0.1 ? 'error' : 'success'}">${Math.abs(result1.deltaE - 2.8).toFixed(4)}</span> |
+                        표준 구현 vs 측정기: <span class="${Math.abs(result2.deltaE - 2.8) > 0.1 ? 'error' : 'success'}">${Math.abs(result2.deltaE - 2.8).toFixed(4)}</span>
+                    </p>
+                </div>
+                
+                <div class="comparison">
+                    <div class="calc-box">
+                        <h3>현재 코드 중간값</h3>
+                        <div class="step">
+                            <div class="formula">Step 1: Chroma 계산</div>
+                            <p>C1 = √(a1² + b1²) = ${result1.steps.C1.toFixed(4)}</p>
+                            <p>C2 = √(a2² + b2²) = ${result1.steps.C2.toFixed(4)}</p>
+                            <p>C_avg = ${result1.steps.Cb.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 2: G 계산</div>
+                            <p>G = ${result1.steps.G.toFixed(6)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 3: 조정된 a' 값</div>
+                            <p>a1' = ${result1.steps.ap1.toFixed(4)}</p>
+                            <p>a2' = ${result1.steps.ap2.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 4: 조정된 Chroma C'</div>
+                            <p>C1' = ${result1.steps.Cp1.toFixed(4)}</p>
+                            <p>C2' = ${result1.steps.Cp2.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 5: Hue 각도 h'</div>
+                            <p>h1' = ${result1.steps.hp1.toFixed(4)}°</p>
+                            <p>h2' = ${result1.steps.hp2.toFixed(4)}°</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 6: 차이값</div>
+                            <p>ΔL' = ${result1.steps.dLp.toFixed(4)}</p>
+                            <p>ΔC' = ${result1.steps.dCp.toFixed(4)}</p>
+                            <p>Δh' = ${result1.steps.dhp.toFixed(4)}°</p>
+                            <p>ΔH' = ${result1.steps.dHp.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 7: Weighting 함수</div>
+                            <p>SL = ${result1.steps.SL.toFixed(6)}</p>
+                            <p>SC = ${result1.steps.SC.toFixed(6)}</p>
+                            <p>SH = ${result1.steps.SH.toFixed(6)}</p>
+                            <p>T = ${result1.steps.T.toFixed(6)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 8: Rotation 함수</div>
+                            <p>RC = ${result1.steps.RC.toFixed(6)}</p>
+                            <p>RT = ${result1.steps.RT.toFixed(6)}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="calc-box">
+                        <h3>표준 구현 중간값</h3>
+                        <div class="step">
+                            <div class="formula">Step 1: Chroma 계산</div>
+                            <p>C1_ab = ${result2.steps.C1_ab.toFixed(4)}</p>
+                            <p>C2_ab = ${result2.steps.C2_ab.toFixed(4)}</p>
+                            <p>C_ab_avg = ${result2.steps.C_ab_avg.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 2: G 계산</div>
+                            <p>G = ${result2.steps.G.toFixed(6)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 3: 조정된 a' 값</div>
+                            <p>a1' = ${result2.steps.a1_prime.toFixed(4)}</p>
+                            <p>a2' = ${result2.steps.a2_prime.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 4: 조정된 Chroma C'</div>
+                            <p>C1' = ${result2.steps.C1_prime.toFixed(4)}</p>
+                            <p>C2' = ${result2.steps.C2_prime.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 5: Hue 각도 h'</div>
+                            <p>h1' = ${result2.steps.h1_prime.toFixed(4)}°</p>
+                            <p>h2' = ${result2.steps.h2_prime.toFixed(4)}°</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 6: 차이값</div>
+                            <p>ΔL' = ${result2.steps.delta_L_prime.toFixed(4)}</p>
+                            <p>ΔC' = ${result2.steps.delta_C_prime.toFixed(4)}</p>
+                            <p>Δh' = ${result2.steps.delta_h_prime.toFixed(4)}°</p>
+                            <p>ΔH' = ${result2.steps.delta_H_prime.toFixed(4)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 7: Weighting 함수</div>
+                            <p>S_L = ${result2.steps.S_L.toFixed(6)}</p>
+                            <p>S_C = ${result2.steps.S_C.toFixed(6)}</p>
+                            <p>S_H = ${result2.steps.S_H.toFixed(6)}</p>
+                            <p>T = ${result2.steps.T.toFixed(6)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 8: Rotation 함수</div>
+                            <p>R_C = ${result2.steps.R_C.toFixed(6)}</p>
+                            <p>R_T = ${result2.steps.R_T.toFixed(6)}</p>
+                        </div>
+                        <div class="step">
+                            <div class="formula">Step 9: 최종 계산 항목</div>
+                            <p>Term1 (L) = ${result2.steps.term1.toFixed(6)}</p>
+                            <p>Term2 (C) = ${result2.steps.term2.toFixed(6)}</p>
+                            <p>Term3 (H) = ${result2.steps.term3.toFixed(6)}</p>
+                            <p>Term4 (RT) = ${result2.steps.term4.toFixed(6)}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-section" style="background: #fff3cd; border-color: #ffc107;">
+                    <h3>🔍 분석 결과</h3>
+                    <p>두 구현 모두 약 2.1 정도의 값을 계산하고 있으며, 측정기 앱의 2.8과는 차이가 있습니다.</p>
+                    <p>가능한 원인:</p>
+                    <ul>
+                        <li><strong>Delta E 버전 차이:</strong> 측정기가 Delta E 1976 (CIE76) 또는 Delta E 1994를 사용할 가능성</li>
+                        <li><strong>광원 조건:</strong> D50 vs D65 등 다른 illuminant 사용</li>
+                        <li><strong>가중치 설정:</strong> kL, kC, kH 값이 1이 아닌 다른 값으로 설정</li>
+                        <li><strong>계산 정밀도:</strong> 부동소수점 연산의 정밀도 차이</li>
+                    </ul>
+                </div>
+                
+                <div class="result-section" style="background: #e3f2fd; border-color: #2196F3;">
+                    <h3>📐 다른 Delta E 공식 테스트</h3>
+                    <p><strong>Delta E 1976 (CIE76):</strong> ${calculateDeltaE76(L1, a1, b1, L2, a2, b2).toFixed(4)}</p>
+                    <p><strong>Delta E 1994:</strong> ${calculateDeltaE94(L1, a1, b1, L2, a2, b2).toFixed(4)}</p>
+                    <p><strong>Delta E CMC:</strong> ${calculateDeltaECMC(L1, a1, b1, L2, a2, b2).toFixed(4)}</p>
+                </div>
+            `;
+        }
+        
+        // Delta E 1976 (CIE76) - 가장 간단한 공식
+        function calculateDeltaE76(L1, a1, b1, L2, a2, b2) {
+            const deltaL = L2 - L1;
+            const deltaA = a2 - a1;
+            const deltaB = b2 - b1;
+            return Math.sqrt(deltaL * deltaL + deltaA * deltaA + deltaB * deltaB);
+        }
+        
+        // Delta E 1994
+        function calculateDeltaE94(L1, a1, b1, L2, a2, b2) {
+            const kL = 1;
+            const kC = 1;
+            const kH = 1;
+            const K1 = 0.045;
+            const K2 = 0.015;
+            
+            const C1 = Math.sqrt(a1 * a1 + b1 * b1);
+            const C2 = Math.sqrt(a2 * a2 + b2 * b2);
+            
+            const deltaL = L2 - L1;
+            const deltaA = a2 - a1;
+            const deltaB = b2 - b1;
+            const deltaC = C2 - C1;
+            const deltaH = Math.sqrt(deltaA * deltaA + deltaB * deltaB - deltaC * deltaC);
+            
+            const SL = 1;
+            const SC = 1 + K1 * C1;
+            const SH = 1 + K2 * C1;
+            
+            const deltaE = Math.sqrt(
+                Math.pow(deltaL / (kL * SL), 2) +
+                Math.pow(deltaC / (kC * SC), 2) +
+                Math.pow(deltaH / (kH * SH), 2)
+            );
+            
+            return deltaE;
+        }
+        
+        // Delta E CMC
+        function calculateDeltaECMC(L1, a1, b1, L2, a2, b2) {
+            const l = 2;  // lightness
+            const c = 1;  // chroma
+            
+            const C1 = Math.sqrt(a1 * a1 + b1 * b1);
+            const C2 = Math.sqrt(a2 * a2 + b2 * b2);
+            
+            const H1 = Math.atan2(b1, a1) * 180 / Math.PI;
+            
+            const deltaL = L2 - L1;
+            const deltaC = C2 - C1;
+            const deltaA = a2 - a1;
+            const deltaB = b2 - b1;
+            const deltaH = Math.sqrt(deltaA * deltaA + deltaB * deltaB - deltaC * deltaC);
+            
+            let T;
+            if (H1 >= 164 && H1 <= 345) {
+                T = 0.56 + Math.abs(0.2 * Math.cos((H1 + 168) * Math.PI / 180));
+            } else {
+                T = 0.36 + Math.abs(0.4 * Math.cos((H1 + 35) * Math.PI / 180));
+            }
+            
+            const F = Math.sqrt(Math.pow(C1, 4) / (Math.pow(C1, 4) + 1900));
+            
+            let SL;
+            if (L1 < 16) {
+                SL = 0.511;
+            } else {
+                SL = (0.040975 * L1) / (1 + 0.01765 * L1);
+            }
+            
+            const SC = ((0.0638 * C1) / (1 + 0.0131 * C1)) + 0.638;
+            const SH = SC * (F * T + 1 - F);
+            
+            const deltaE = Math.sqrt(
+                Math.pow(deltaL / (l * SL), 2) +
+                Math.pow(deltaC / (c * SC), 2) +
+                Math.pow(deltaH / SH, 2)
+            );
+            
+            return deltaE;
+        }
+        
+        // 페이지 로드 시 자동 계산
+        window.onload = function() {
+            calculateBothMethods();
+        };
+    </script>
+</body>
+</html>

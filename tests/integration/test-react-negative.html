@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>React 음수 입력 디버깅</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 50px;
+            background: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            border: 2px solid #ddd;
+        }
+        .test-section.working {
+            border-color: #4CAF50;
+            background: #e8f5e9;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        label {
+            width: 80px;
+            font-weight: bold;
+        }
+        input {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            width: 200px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .output {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #333;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .instructions {
+            background: #fff3e0;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+            border-left: 4px solid #ff9800;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .fail {
+            color: #f44336;
+            font-weight: bold;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 React 음수 입력 문제 재현 테스트</h1>
+        
+        <div class="instructions">
+            <h3>🎯 테스트 목표</h3>
+            <p>ColorInput.tsx와 동일한 방식으로 음수 입력 문제를 재현하고 해결합니다.</p>
+            <ul>
+                <li><strong>목표:</strong> '-50'을 입력할 때 '-' 문자가 '0'으로 변하지 않아야 함</li>
+                <li><strong>방법:</strong> '-' 키를 누르고, '5', '0'을 순서대로 입력</li>
+                <li><strong>성공 기준:</strong> 입력 필드에 "-50"이 표시되고 유지됨</li>
+            </ul>
+        </div>
+
+        <div id="root"></div>
+
+        <div class="log" id="globalLog">
+            테스트 준비 중...<br>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // 전역 로그 함수
+        function addGlobalLog(message) {
+            const log = document.getElementById('globalLog');
+            const time = new Date().toLocaleTimeString();
+            log.innerHTML += `[${time}] ${message}<br>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // 문제가 있는 ColorInput 재현
+        function ProblematicColorInput({ value, onChange }) {
+            const [localValue, setLocalValue] = useState(value);
+            const [inputValues, setInputValues] = useState({
+                L: value.L.toString(),
+                a: value.a.toString(),
+                b: value.b.toString()
+            });
+
+            // 문제의 useEffect - onChange 호출 시 입력값이 덮어써짐
+            useEffect(() => {
+                setLocalValue(value);
+                setInputValues({
+                    L: value.L.toString(),
+                    a: value.a.toString(),
+                    b: value.b.toString()
+                });
+            }, [value]);
+
+            const handleInputChange = (component, newValue) => {
+                addGlobalLog(`[문제] ${component} 입력: "${newValue}"`);
+                
+                setInputValues(prev => ({
+                    ...prev,
+                    [component]: newValue
+                }));
+
+                // 실시간으로 onChange 호출 (문제의 원인)
+                if (newValue !== '-' && newValue !== '') {
+                    const num = parseFloat(newValue);
+                    if (!isNaN(num)) {
+                        const updated = { ...localValue, [component]: num };
+                        setLocalValue(updated);
+                        onChange(updated); // 이것이 useEffect를 트리거함!
+                    }
+                }
+            };
+
+            return (
+                <div className="test-section">
+                    <h3>❌ 문제 있는 구현 (onChange 실시간 호출)</h3>
+                    <div className="input-group">
+                        <label>a*:</label>
+                        <input
+                            type="text"
+                            value={inputValues.a}
+                            onChange={(e) => handleInputChange('a', e.target.value)}
+                            placeholder="-20 입력"
+                        />
+                    </div>
+                    <div className="output">
+                        입력값: "{inputValues.a}" | 실제값: {localValue.a}
+                    </div>
+                </div>
+            );
+        }
+
+        // 수정된 ColorInput
+        function FixedColorInput({ value, onChange }) {
+            const [localValue, setLocalValue] = useState(value);
+            const [inputValues, setInputValues] = useState({
+                L: value.L.toString(),
+                a: value.a.toString(),
+                b: value.b.toString()
+            });
+            const inputRefs = useRef({});
+
+            // 포커스 체크하여 사용자 입력 중에는 업데이트 방지
+            useEffect(() => {
+                const activeElement = document.activeElement;
+                const isInputFocused = activeElement && 
+                    Object.values(inputRefs.current).includes(activeElement);
+                
+                if (!isInputFocused) {
+                    setLocalValue(value);
+                    setInputValues({
+                        L: value.L.toString(),
+                        a: value.a.toString(),
+                        b: value.b.toString()
+                    });
+                }
+            }, [value]);
+
+            const handleInputChange = (component, newValue) => {
+                addGlobalLog(`[수정됨] ${component} 입력: "${newValue}"`);
+                
+                // 입력값만 업데이트, onChange는 호출하지 않음
+                setInputValues(prev => ({
+                    ...prev,
+                    [component]: newValue
+                }));
+            };
+
+            const handleInputBlur = (component) => {
+                const inputValue = inputValues[component];
+                addGlobalLog(`[수정됨] ${component} blur: "${inputValue}"`);
+                
+                if (inputValue === '' || inputValue === '-' || inputValue === '.') {
+                    setInputValues(prev => ({
+                        ...prev,
+                        [component]: localValue[component].toString()
+                    }));
+                    return;
+                }
+
+                const num = parseFloat(inputValue);
+                if (!isNaN(num)) {
+                    const updated = { ...localValue, [component]: num };
+                    setLocalValue(updated);
+                    onChange(updated);
+                }
+            };
+
+            return (
+                <div className="test-section working">
+                    <h3>✅ 수정된 구현 (blur에서만 onChange 호출)</h3>
+                    <div className="input-group">
+                        <label>a*:</label>
+                        <input
+                            ref={el => inputRefs.current.a = el}
+                            type="text"
+                            value={inputValues.a}
+                            onChange={(e) => handleInputChange('a', e.target.value)}
+                            onBlur={() => handleInputBlur('a')}
+                            placeholder="-20 입력"
+                        />
+                    </div>
+                    <div className="output">
+                        입력값: <span className="success">"{inputValues.a}"</span> | 실제값: {localValue.a}
+                    </div>
+                </div>
+            );
+        }
+
+        // 메인 앱
+        function App() {
+            const [color1, setColor1] = useState({ L: 50, a: 0, b: 0 });
+            const [color2, setColor2] = useState({ L: 50, a: 0, b: 0 });
+
+            return (
+                <>
+                    <ProblematicColorInput value={color1} onChange={setColor1} />
+                    <FixedColorInput value={color2} onChange={setColor2} />
+                    
+                    <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                        <button onClick={() => {
+                            setColor1({ L: 50, a: -30, b: 20 });
+                            setColor2({ L: 50, a: -30, b: 20 });
+                            addGlobalLog('프로그래밍적으로 값 설정: a* = -30');
+                        }}>
+                            프로그래밍적으로 -30 설정
+                        </button>
+                        <button onClick={() => {
+                            setColor1({ L: 50, a: 0, b: 0 });
+                            setColor2({ L: 50, a: 0, b: 0 });
+                            addGlobalLog('값 초기화');
+                        }}>
+                            초기화
+                        </button>
+                    </div>
+                </>
+            );
+        }
+
+        // React 렌더링
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        addGlobalLog('React 컴포넌트 렌더링 완료');
+        addGlobalLog('위쪽(빨간 테두리): 문제 있는 구현 - "-" 입력 시 사라짐');
+        addGlobalLog('아래쪽(녹색 테두리): 수정된 구현 - "-" 입력 가능');
+    </script>
+</body>
+</html>

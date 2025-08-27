@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANTONE 기능 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 { color: #333; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #5a67d8; }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .color-swatch {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            margin: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 PANTONE 색상 매칭 테스트</h1>        <div class="test-section">
+            <h2>1. PANTONE 데이터베이스 테스트</h2>
+            <button class="btn" onclick="testDatabase()">데이터베이스 확인</button>
+            <div id="db-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. PANTONE 코드 검색</h2>
+            <input type="text" id="pantone-code" placeholder="예: PANTONE 185 C" style="padding: 8px;">
+            <button class="btn" onclick="searchByCode()">검색</button>
+            <div id="code-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Lab 값으로 가장 가까운 PANTONE 찾기</h2>
+            <p>테스트 색상: L=50, a=20, b=30 (주황색 계열)</p>
+            <button class="btn" onclick="findClosest()">가까운 색상 찾기</button>
+            <div id="closest-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. React 앱에서 확인</h2>
+            <button class="btn" onclick="window.open('http://localhost:3000', '_blank')">앱 열기</button>
+            <p>앱에서 다음을 테스트하세요:</p>
+            <ul>
+                <li>PANTONE 코드 입력 (예: PANTONE 185 C, Reflex Blue C)</li>
+                <li>"가까운 색상" 버튼으로 유사 PANTONE 확인</li>
+                <li>Lab 값 입력 시 자동으로 가장 가까운 PANTONE 3개 표시</li>
+                <li>PANTONE 색상 클릭하여 선택</li>
+            </ul>
+        </div>
+    </div>    <script type="module">
+        window.testDatabase = async function() {
+            const resultEl = document.getElementById('db-result');
+            try {
+                const { pantoneDB } = await import('./core/pantoneDatabase.js');
+                const allColors = pantoneDB.getAllColors();
+                
+                resultEl.innerHTML = `✅ PANTONE 데이터베이스 로드 성공\n`;
+                resultEl.innerHTML += `총 ${allColors.length}개 색상 등록됨\n\n`;
+                resultEl.innerHTML += `샘플 색상:\n`;
+                
+                // 처음 5개 색상 표시
+                allColors.slice(0, 5).forEach(color => {
+                    const swatch = `<span class="color-swatch" style="background-color: ${color.hex}"></span>`;
+                    resultEl.innerHTML += `${swatch} ${color.code} - L:${color.L.toFixed(1)} a:${color.a.toFixed(1)} b:${color.b.toFixed(1)}\n`;
+                });
+            } catch (error) {
+                resultEl.innerHTML = `❌ 오류: ${error.message}`;
+            }
+        };
+
+        window.searchByCode = async function() {
+            const resultEl = document.getElementById('code-result');
+            const code = document.getElementById('pantone-code').value;
+            
+            if (!code) {
+                resultEl.innerHTML = '⚠️ PANTONE 코드를 입력하세요.';
+                return;
+            }
+            
+            try {
+                const { pantoneDB } = await import('./core/pantoneDatabase.js');
+                const result = pantoneDB.findByCode(code);
+                
+                if (result) {
+                    const swatch = `<span class="color-swatch" style="background-color: ${result.hex}"></span>`;
+                    resultEl.innerHTML = `✅ 찾았습니다!\n\n`;
+                    resultEl.innerHTML += `${swatch} ${result.code}\n`;
+                    resultEl.innerHTML += `이름: ${result.name}\n`;
+                    resultEl.innerHTML += `Lab: L=${result.L.toFixed(1)}, a=${result.a.toFixed(1)}, b=${result.b.toFixed(1)}\n`;
+                    resultEl.innerHTML += `HEX: ${result.hex}`;
+                } else {
+                    // 키워드 검색 시도
+                    const searchResults = pantoneDB.searchByKeyword(code);
+                    if (searchResults.length > 0) {
+                        resultEl.innerHTML = `💡 유사한 색상 ${searchResults.length}개 발견:\n\n`;
+                        searchResults.slice(0, 3).forEach(color => {
+                            const swatch = `<span class="color-swatch" style="background-color: ${color.hex}"></span>`;
+                            resultEl.innerHTML += `${swatch} ${color.code}\n`;
+                        });
+                    } else {
+                        resultEl.innerHTML = `❌ "${code}"에 해당하는 PANTONE을 찾을 수 없습니다.`;
+                    }
+                }
+            } catch (error) {
+                resultEl.innerHTML = `❌ 오류: ${error.message}`;
+            }
+        };

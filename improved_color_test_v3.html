@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>원라벨 컬러연구소 - 고급 잉크 배합 계산기 v3.0</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .version-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .measurement-info {
+            background: #f0f4ff;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 10px 10px 0 0;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 968px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .card h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        /* 잉크 설정 스타일 */
+        .ink-row {
+            display: grid;
+            grid-template-columns: 150px 1fr auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .ink-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .ink-concentration {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .concentration-select {
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .concentration-select:hover {
+            border-color: #667eea;
+        }
+        
+        .concentration-badge {
+            padding: 5px 10px;
+            background: #f0f4ff;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #667eea;
+            font-weight: 500;
+        }
+        
+        /* Delta E 2000 가중치 설정 스타일 */
+        .delta-e-settings {
+            background: #f0f8ff;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 20px;
+            display: none;
+        }
+        
+        .delta-e-settings.active {
+            display: block;
+        }
+        
+        .weight-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .weight-control {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .weight-control label {
+            font-weight: bold;
+            font-size: 0.9em;
+            color: #333;
+        }
+        
+        .weight-control input {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .weight-control .description {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        
+        .preset-btn {
+            padding: 8px 15px;
+            background: white;
+            border: 1px solid #2196f3;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .preset-btn:hover {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .preset-btn.active {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .lab-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .lab-inputs input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .lab-inputs input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        /* 시료 테스트 관련 새로운 스타일 */
+        .sample-container {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .sample-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .sample-title-input {
+            font-weight: bold;
+            color: #555;
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background: #f8f9fa;
+            font-size: 1.1em;
+        }
+        
+        .sample-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .delta-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .delta-excellent {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+        
+        .delta-good {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffc107;
+        }
+        
+        .delta-poor {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .btn-delete {
+            background: #f87171;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #ef4444;
+        }
+        
+        .btn-add {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        
+        .btn-add:hover {
+            background: #5569d8;
+        }
+        
+        .color-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .color-box {
+            position: relative;
+            height: 100px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .color-label {
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .lab-values {
+            background: rgba(255,255,255,0.9);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.85em;
+            font-family: monospace;
+        }
+        
+        /* Lab 색공간 시각화 */
+        .lab-visualization {
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+        }
+        
+        .lab-visualization h3 {
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .visualization-container {
+            display: grid;
+            grid-template-columns: 1fr 200px;
+            gap: 30px;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .visualization-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .canvas-container {
+            position: relative;
+            text-align: center;
+        }
+        
+        .axis-label {
+            position: absolute;
+            font-weight: bold;
+            font-size: 0.9em;
+            color: #333;
+        }
+        
+        .axis-label.top {
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .axis-label.bottom {
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .axis-label.left {
+            left: -30px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+        }
+        
+        .axis-label.right {
+            right: -30px;
+            top: 50%;
+            transform: translateY(-50%) rotate(90deg);
+        }
+        
+        canvas {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        
+        .legend {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .delta-info {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .delta-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .delta-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .delta-item-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .delta-item-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .target-reference {
+            background: linear-gradient(135deg, #e8f4fd, #f0f4ff);
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .target-reference h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .target-icon {
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 20px;
+        }
+        
+        .calculate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 배합 결과 스타일 */
+        .formulation-result {
+            background: linear-gradient(135deg, #f0f4ff, #fff);
+            border: 2px solid #667eea;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+        
+        .formulation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .formulation-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .formulation-accuracy {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .accuracy-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .ink-formula {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .ink-formula-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            text-align: center;
+        }
+        
+        .ink-formula-name {
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .ink-formula-percentage {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .ink-formula-concentration {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .predicted-color {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        
+        .predicted-color-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .save-formula-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .save-formula-btn:hover {
+            background: #218838;
+        }
+        
+        /* 히스토리 스타일 */
+        .history-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .history-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .history-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+        
+        .history-date {
+            font-size: 0.85em;
+            color: #999;
+            margin-bottom: 5px;
+        }
+        
+        .history-delta {
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 원라벨 고급 잉크 배합 계산기</h1>
+            <p>Lab 색상값 기반 정밀 조색 시스템</p>
+            <span class="version-badge">v3.0 - 향상된 시료 테스트 & Lab 색공간 시각화</span>
+        </div>
+        
+        <div class="measurement-info">
+            <strong>측정 조건:</strong> D50 광원 | 2° 관찰각 | SCI 모드 | 3회 평균 측정
+            <br><strong>v3.0 신기능:</strong> Lab 색공간 시각화 | 실시간 색차 비교 | a*b* 평면 & L* 축 분리 표시 | Delta E 계산 방식 선택
+        </div>
+        
+        <div class="delta-e-selector" style="display: flex; gap: 15px; align-items: center; padding: 15px; background: #fff9e6; border: 2px solid #ffc107; border-radius: 10px; margin: 20px;">
+            <label style="font-weight: bold; color: #333;">📏 Delta E 계산 방식:</label>
+            <select id="deltaEMethod" onchange="updateDeltaEMethod()" style="padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 5px; font-size: 1em; cursor: pointer;">
+                <option value="2000" selected>Delta E 2000 (CIE2000)</option>
+                <option value="1994">Delta E 1994 (CIE94)</option>
+                <option value="1976">Delta E 1976 (CIE76)</option>
+                <option value="CMC">Delta E CMC</option>
+            </select>
+            <span class="info" id="deltaEInfo" style="font-size: 0.9em; color: #666; margin-left: 10px;">가장 정확한 인간 시각 기반 계산</span>
+        </div>
+        
+        <div class="delta-e-settings" id="deltaE2000Settings">
+            <h4>⚙️ Delta E 2000 가중치 설정</h4>
+            <div class="preset-buttons">
+                <button class="preset-btn active" onclick="setDeltaEPreset('standard')">표준 (1:1:1)</button>
+                <button class="preset-btn" onclick="setDeltaEPreset('textile')">텍스타일 (2:1:1)</button>
+                <button class="preset-btn" onclick="setDeltaEPreset('measurer')">측정기 호환 (0.65:1:1)</button>
+                <button class="preset-btn" onclick="setDeltaEPreset('custom')">사용자 정의</button>
+            </div>
+            <div class="weight-controls">
+                <div class="weight-control">
+                    <label>kL (명도 가중치)</label>
+                    <input type="number" id="kL" value="1" min="0.1" max="3" step="0.05" onchange="updateWeights()">
+                    <span class="description">명도 차이 민감도</span>
+                </div>
+                <div class="weight-control">
+                    <label>kC (채도 가중치)</label>
+                    <input type="number" id="kC" value="1" min="0.1" max="3" step="0.05" onchange="updateWeights()">
+                    <span class="description">색상 강도 민감도</span>
+                </div>
+                <div class="weight-control">
+                    <label>kH (색조 가중치)</label>
+                    <input type="number" id="kH" value="1" min="0.1" max="3" step="0.05" onchange="updateWeights()">
+                    <span class="description">색조 차이 민감도</span>
+                </div>
+            </div>
+            <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <strong>현재 설정:</strong> <span id="currentWeights">kL=1.00, kC=1.00, kH=1.00 (표준)</span>
+            </div>
+        </div>
+        
+        <div class="content">
+            <!-- 탭 메뉴 -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('samples')">시료 테스트</button>
+                <button class="tab" onclick="switchTab('basic')">기본 설정</button>
+                <button class="tab" onclick="switchTab('inks')">잉크 설정</button>
+            </div>
+            
+            <!-- 시료 테스트 탭 -->
+            <div id="samples-tab" class="tab-content active">
+                <!-- 목표 색상 표시 -->
+                <div class="target-reference">
+                    <h3>
+                        <span class="target-icon">🎯</span>
+                        목표 색상 (Reference)
+                    </h3>
+                    <div class="color-comparison">
+                        <div class="color-box" id="targetColorBox">
+                            <div class="lab-values" id="targetLabValues">
+                                L*: 50.0 | a*: 60.0 | b*: 30.0
+                            </div>
+                            <span class="color-label">목표 색상</span>
+                        </div>
+                        <div class="input-group">
+                            <label>목표 Lab 값</label>
+                            <div class="lab-inputs">
+                                <input type="number" id="targetL" placeholder="L* (0-100)" step="0.1" value="50" onchange="updateTargetColor()">
+                                <input type="number" id="targetA" placeholder="a* (-128~127)" step="0.1" value="60" onchange="updateTargetColor()">
+                                <input type="number" id="targetB" placeholder="b* (-128~127)" step="0.1" value="30" onchange="updateTargetColor()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>🧪 시료 테스트 기록</h2>
+                    <p style="color: #666; margin-bottom: 15px;">
+                        실제 인쇄한 시료의 Lab값을 측정하여 목표 색상과의 차이를 시각적으로 확인하세요.
+                    </p>
+                    
+                    <div id="samplesList">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                    
+                    <button class="btn-add" onclick="addSample()">+ 시료 추가</button>
+                </div>
+            </div>
+            
+            <!-- 기본 설정 탭 -->
+            <div id="basic-tab" class="tab-content">
+                <div class="grid">
+                    <!-- 원단 설정 -->
+                    <div class="card">
+                        <h2>📋 원단 설정</h2>
+                        <div class="input-group">
+                            <label>원단 종류</label>
+                            <select id="substrateType" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                                <option value="custom">직접 입력</option>
+                                <option value="art_white">아트지 (백색)</option>
+                                <option value="pet_clear">PET (투명)</option>
+                                <option value="pet_white">PET (백색)</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>원단 Lab 값</label>
+                            <div class="lab-inputs">
+                                <input type="number" id="substrateL" placeholder="L* (0-100)" step="0.1" value="95">
+                                <input type="number" id="substrateA" placeholder="a* (-128~127)" step="0.1" value="0">
+                                <input type="number" id="substrateB" placeholder="b* (-128~127)" step="0.1" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 제품 정보 -->
+                    <div class="card">
+                        <h2>📦 제품 정보</h2>
+                        <div class="input-group">
+                            <label>제품명</label>
+                            <input type="text" id="productName" placeholder="예: 라벨지 A-1234" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                        </div>
+                        <div class="input-group">
+                            <label>색상코드</label>
+                            <input type="text" id="colorCode" placeholder="예: WLC-RED-001" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 잉크 설정 탭 -->
+            <div id="inks-tab" class="tab-content">
+                <div class="card">
+                    <h2>🖌️ 베이스 잉크 Lab 값</h2>
+                    <div id="inkInputs">
+                        <!-- 동적으로 생성됨 -->
+                    </div>
+                </div>
+            </div>
+            
+            <button class="calculate-btn" onclick="calculateFormulation()">
+                🧪 최적 배합 계산
+            </button>
+            
+            <!-- 배합 결과 표시 -->
+            <div id="formulationResult" class="formulation-result hidden">
+                <!-- 동적으로 생성됨 -->
+            </div>
+            
+            <!-- 히스토리 패널 -->
+            <div id="historyPanel" class="history-panel hidden">
+                <h3>📜 배합 히스토리</h3>
+                <div id="historyList">
+                    <!-- 동적으로 생성됨 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 전역 상태
+        const state = {
+            samples: [],
+            target: { L: 50, a: 60, b: 30 },
+            inks: [],
+            formulation: null,
+            deltaEMethod: '2000',  // 기본값: Delta E 2000
+            deltaE2000Weights: { kL: 1, kC: 1, kH: 1 },  // Delta E 2000 가중치
+            currentPreset: 'standard'  // 현재 프리셋
+        };
+        
+        // 기본 잉크 (100% 농도 기준)
+        const baseInks = [
+            { 
+                name: 'Cyan', 
+                L100: 55, a100: -37, b100: -50,
+                L70: 68, a70: -26, b70: -35,  // 70% Satin
+                L40: 78, a40: -15, b40: -20   // 40% Satin
+            },
+            { 
+                name: 'Magenta', 
+                L100: 48, a100: 74, b100: -3,
+                L70: 62, a70: 52, b70: -2,
+                L40: 75, a40: 30, b40: -1
+            },
+            { 
+                name: 'Yellow', 
+                L100: 89, a100: -5, b100: 93,
+                L70: 91, a70: -3.5, b70: 65,
+                L40: 93, a40: -2, b40: 37
+            },
+            { 
+                name: 'Black', 
+                L100: 16, a100: 0, b100: 0,
+                L70: 35, a70: 0, b70: 0,
+                L40: 55, a40: 0, b40: 0
+            },
+            { 
+                name: 'White', 
+                L100: 95, a100: 0, b100: 0,
+                L70: 95, a70: 0, b70: 0,
+                L40: 95, a40: 0, b40: 0
+            }
+        ];
+        
+        // Delta E 계산 방식 변경
+        function updateDeltaEMethod() {
+            const method = document.getElementById('deltaEMethod').value;
+            state.deltaEMethod = method;
+            
+            // 정보 메시지 업데이트
+            const infoMessages = {
+                '2000': '가장 정확한 인간 시각 기반 계산',
+                '1994': '산업 표준, 중간 정확도',
+                '1976': '가장 단순하지만 부정확',
+                'CMC': '섬유 산업 특화'
+            };
+            document.getElementById('deltaEInfo').textContent = infoMessages[method];
+            
+            // Delta E 2000 설정 패널 표시/숨기기
+            const settingsPanel = document.getElementById('deltaE2000Settings');
+            if (method === '2000') {
+                settingsPanel.classList.add('active');
+            } else {
+                settingsPanel.classList.remove('active');
+            }
+            
+            // 모든 시료의 Delta E 값 재계산
+            updateAllSamples();
+            
+            // 배합 결과가 있으면 재계산
+            if (state.formulation) {
+                calculateFormulation();
+            }
+        }
+        
+        // Delta E 2000 프리셋 설정
+        function setDeltaEPreset(preset) {
+            state.currentPreset = preset;
+            
+            // 버튼 상태 업데이트
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 프리셋 값 설정
+            const presets = {
+                'standard': { kL: 1, kC: 1, kH: 1, name: '표준' },
+                'textile': { kL: 2, kC: 1, kH: 1, name: '텍스타일' },
+                'measurer': { kL: 0.65, kC: 1, kH: 1, name: '측정기 호환' },
+                'custom': null
+            };
+            
+            if (preset !== 'custom' && presets[preset]) {
+                const values = presets[preset];
+                state.deltaE2000Weights = { kL: values.kL, kC: values.kC, kH: values.kH };
+                document.getElementById('kL').value = values.kL;
+                document.getElementById('kC').value = values.kC;
+                document.getElementById('kH').value = values.kH;
+                
+                document.getElementById('currentWeights').textContent = 
+                    `kL=${values.kL.toFixed(2)}, kC=${values.kC.toFixed(2)}, kH=${values.kH.toFixed(2)} (${values.name})`;
+                
+                // 모든 계산 업데이트
+                updateAllSamples();
+                if (state.formulation) {
+                    calculateFormulation();
+                }
+            }
+        }
+        
+        // 가중치 수동 업데이트
+        function updateWeights() {
+            state.deltaE2000Weights.kL = parseFloat(document.getElementById('kL').value) || 1;
+            state.deltaE2000Weights.kC = parseFloat(document.getElementById('kC').value) || 1;
+            state.deltaE2000Weights.kH = parseFloat(document.getElementById('kH').value) || 1;
+            
+            // 현재 설정 표시
+            const preset = state.currentPreset === 'custom' ? '사용자 정의' : '';
+            document.getElementById('currentWeights').textContent = 
+                `kL=${state.deltaE2000Weights.kL.toFixed(2)}, kC=${state.deltaE2000Weights.kC.toFixed(2)}, kH=${state.deltaE2000Weights.kH.toFixed(2)} ${preset}`;
+            
+            // Custom 프리셋으로 자동 전환
+            if (state.currentPreset !== 'custom') {
+                state.currentPreset = 'custom';
+                document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            }
+            
+            // 모든 계산 업데이트
+            updateAllSamples();
+            if (state.formulation) {
+                calculateFormulation();
+            }
+        }
+        
+        // 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTargetColor();
+            initializeInkInputs();
+            loadHistory();
+            
+            // Delta E 2000이 기본 선택되어 있으므로 설정 패널 표시
+            if (state.deltaEMethod === '2000') {
+                document.getElementById('deltaE2000Settings').classList.add('active');
+            }
+        });
+        
+        // 탭 전환
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        // Lab to RGB 변환
+        function labToRgb(L, a, b) {
+            // Lab to XYZ (D50)
+            const fy = (L + 16) / 116;
+            const fx = fy + a / 500;
+            const fz = fy - b / 200;
+            
+            const epsilon = 216 / 24389;
+            const kappa = 24389 / 27;
+            
+            const xr = fx * fx * fx > epsilon ? fx * fx * fx : (116 * fx - 16) / kappa;
+            const yr = L > kappa * epsilon ? Math.pow((L + 16) / 116, 3) : L / kappa;
+            const zr = fz * fz * fz > epsilon ? fz * fz * fz : (116 * fz - 16) / kappa;
+            
+            // D50 white point
+            const X = xr * 96.422;
+            const Y = yr * 100.000;
+            const Z = zr * 82.521;
+            
+            // XYZ to sRGB
+            let r = X/100 * 3.1338561 - Y/100 * 1.6168667 - Z/100 * 0.4906146;
+            let g = -X/100 * 0.9787684 + Y/100 * 1.9161415 + Z/100 * 0.0334540;
+            let bl = X/100 * 0.0719453 - Y/100 * 0.2289914 + Z/100 * 1.4052427;
+            
+            // Gamma correction
+            r = r > 0.0031308 ? 1.055 * Math.pow(r, 1/2.4) - 0.055 : 12.92 * r;
+            g = g > 0.0031308 ? 1.055 * Math.pow(g, 1/2.4) - 0.055 : 12.92 * g;
+            bl = bl > 0.0031308 ? 1.055 * Math.pow(bl, 1/2.4) - 0.055 : 12.92 * bl;
+            
+            return {
+                r: Math.max(0, Math.min(255, Math.round(r * 255))),
+                g: Math.max(0, Math.min(255, Math.round(g * 255))),
+                b: Math.max(0, Math.min(255, Math.round(bl * 255)))
+            };
+        }
+        
+        // Delta E 2000 계산
+        function calculateDeltaE00(L1, a1, b1, L2, a2, b2) {
+            const kL = state.deltaE2000Weights ? state.deltaE2000Weights.kL : 1;
+            const kC = state.deltaE2000Weights ? state.deltaE2000Weights.kC : 1;
+            const kH = state.deltaE2000Weights ? state.deltaE2000Weights.kH : 1;
+            
+            // Calculate C and h
+            const C1 = Math.sqrt(a1 * a1 + b1 * b1);
+            const C2 = Math.sqrt(a2 * a2 + b2 * b2);
+            const Cb = (C1 + C2) / 2;
+            
+            const G = 0.5 * (1 - Math.sqrt(Math.pow(Cb, 7) / (Math.pow(Cb, 7) + Math.pow(25, 7))));
+            const ap1 = a1 * (1 + G);
+            const ap2 = a2 * (1 + G);
+            
+            const Cp1 = Math.sqrt(ap1 * ap1 + b1 * b1);
+            const Cp2 = Math.sqrt(ap2 * ap2 + b2 * b2);
+            
+            let hp1 = Math.atan2(b1, ap1) * 180 / Math.PI;
+            if (hp1 < 0) hp1 += 360;
+            let hp2 = Math.atan2(b2, ap2) * 180 / Math.PI;
+            if (hp2 < 0) hp2 += 360;
+            
+            // Calculate differences
+            const dLp = L2 - L1;
+            const dCp = Cp2 - Cp1;
+            
+            let dhp = hp2 - hp1;
+            if (Math.abs(dhp) > 180) {
+                if (dhp > 180) dhp -= 360;
+                else dhp += 360;
+            }
+            
+            const dHp = 2 * Math.sqrt(Cp1 * Cp2) * Math.sin((dhp * Math.PI / 180) / 2);
+            
+            // Calculate averages
+            const Lbp = (L1 + L2) / 2;
+            const Cbp = (Cp1 + Cp2) / 2;
+            
+            let hbp = (hp1 + hp2) / 2;
+            if (Math.abs(hp1 - hp2) > 180) {
+                if (hbp < 180) hbp += 180;
+                else hbp -= 180;
+            }
+            
+            // Calculate T
+            const T = 1 - 0.17 * Math.cos((hbp - 30) * Math.PI / 180) +
+                     0.24 * Math.cos(2 * hbp * Math.PI / 180) +
+                     0.32 * Math.cos((3 * hbp + 6) * Math.PI / 180) -
+                     0.20 * Math.cos((4 * hbp - 63) * Math.PI / 180);
+            
+            // Calculate S factors
+            const SL = 1 + (0.015 * Math.pow(Lbp - 50, 2)) / Math.sqrt(20 + Math.pow(Lbp - 50, 2));
+            const SC = 1 + 0.045 * Cbp;
+            const SH = 1 + 0.015 * Cbp * T;
+            
+            // Calculate RT
+            const dTheta = 30 * Math.exp(-Math.pow((hbp - 275) / 25, 2));
+            const RC = 2 * Math.sqrt(Math.pow(Cbp, 7) / (Math.pow(Cbp, 7) + Math.pow(25, 7)));
+            const RT = -RC * Math.sin(2 * dTheta * Math.PI / 180);
+            
+            // Final calculation
+            const dE00 = Math.sqrt(
+                Math.pow(dLp / (kL * SL), 2) +
+                Math.pow(dCp / (kC * SC), 2) +
+                Math.pow(dHp / (kH * SH), 2) +
+                RT * (dCp / (kC * SC)) * (dHp / (kH * SH))
+            );
+            
+            return dE00;
+        }
+        
+        // 목표 색상 업데이트
+        function updateTargetColor() {
+            const L = parseFloat(document.getElementById('targetL').value) || 50;
+            const a = parseFloat(document.getElementById('targetA').value) || 60;
+            const b = parseFloat(document.getElementById('targetB').value) || 30;
+            
+            state.target = { L, a, b };
+            
+            const rgb = labToRgb(L, a, b);
+            const colorBox = document.getElementById('targetColorBox');
+            colorBox.style.background = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+            
+            document.getElementById('targetLabValues').textContent = 
+                `L*: ${L.toFixed(1)} | a*: ${a.toFixed(1)} | b*: ${b.toFixed(1)}`;
+            
+            // 모든 시료 업데이트
+            updateAllSamples();
+        }
+        
+        // 시료 추가
+        function addSample() {
+            const sampleId = `sample_${Date.now()}`;
+            const sampleIndex = state.samples.length + 1;
+            
+            state.samples.push({
+                id: sampleId,
+                name: `시료 ${sampleIndex}`,
+                L: 50,
+                a: 0,
+                b: 0
+            });
+            
+            createSampleElement(state.samples[state.samples.length - 1]);
+        }
+        
+        // 시료 요소 생성
+        function createSampleElement(sample) {
+            const container = document.getElementById('samplesList');
+            
+            const sampleDiv = document.createElement('div');
+            sampleDiv.className = 'sample-container';
+            sampleDiv.id = sample.id;
+            
+            const deltaE = calculateDeltaE00(
+                state.target.L, state.target.a, state.target.b,
+                sample.L, sample.a, sample.b
+            );
+            
+            let deltaClass = 'delta-poor';
+            if (deltaE < 1.0) deltaClass = 'delta-excellent';
+            else if (deltaE < 2.0) deltaClass = 'delta-good';
+            
+            sampleDiv.innerHTML = `
+                <div class="sample-header">
+                    <input type="text" class="sample-title-input" value="${sample.name}" 
+                           onchange="updateSampleName('${sample.id}', this.value)">
+                    <div class="sample-actions">
+                        <span class="delta-badge ${deltaClass}">ΔE: ${deltaE.toFixed(2)}</span>
+                        <button class="btn-small btn-delete" onclick="deleteSample('${sample.id}')">삭제</button>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>측정 Lab 값</label>
+                    <div class="lab-inputs">
+                        <input type="number" placeholder="L*" step="0.1" value="${sample.L}"
+                               onchange="updateSampleLab('${sample.id}', 'L', this.value)">
+                        <input type="number" placeholder="a*" step="0.1" value="${sample.a}"
+                               onchange="updateSampleLab('${sample.id}', 'a', this.value)">
+                        <input type="number" placeholder="b*" step="0.1" value="${sample.b}"
+                               onchange="updateSampleLab('${sample.id}', 'b', this.value)">
+                    </div>
+                </div>
+                
+                <div class="color-comparison">
+                    <div class="color-box" id="${sample.id}_target">
+                        <div class="lab-values">
+                            L*: ${state.target.L.toFixed(1)} | a*: ${state.target.a.toFixed(1)} | b*: ${state.target.b.toFixed(1)}
+                        </div>
+                        <span class="color-label">목표</span>
+                    </div>
+                    <div class="color-box" id="${sample.id}_sample">
+                        <div class="lab-values">
+                            L*: ${sample.L.toFixed(1)} | a*: ${sample.a.toFixed(1)} | b*: ${sample.b.toFixed(1)}
+                        </div>
+                        <span class="color-label">시료</span>
+                    </div>
+                </div>
+                
+                <div class="lab-visualization">
+                    <h3>Lab 색공간 시각화</h3>
+                    <div class="visualization-container">
+                        <div class="canvas-container">
+                            <canvas id="${sample.id}_ab_canvas" width="300" height="300"></canvas>
+                            <span class="axis-label top">b* +${state.target.b > 0 ? Math.ceil(Math.abs(state.target.b) / 10) * 10 : 50} (Yellow)</span>
+                            <span class="axis-label bottom">b* -${state.target.b < 0 ? Math.ceil(Math.abs(state.target.b) / 10) * 10 : 50} (Blue)</span>
+                            <span class="axis-label left">a* -${state.target.a < 0 ? Math.ceil(Math.abs(state.target.a) / 10) * 10 : 50} (Green)</span>
+                            <span class="axis-label right">a* +${state.target.a > 0 ? Math.ceil(Math.abs(state.target.a) / 10) * 10 : 50} (Red)</span>
+                        </div>
+                        <div class="canvas-container">
+                            <canvas id="${sample.id}_l_canvas" width="100" height="300"></canvas>
+                            <span class="axis-label top">L* 100</span>
+                            <span class="axis-label bottom">L* 0</span>
+                        </div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #ff0000;"></div>
+                            <span>목표 색상 (Target)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #0066ff;"></div>
+                            <span>시료 색상 (Sample)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(255,0,0,0.2); border: 2px solid #ff0000;"></div>
+                            <span>허용 범위 (ΔE < 1)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="delta-info">
+                    <h4>색차 상세 분석</h4>
+                    <div class="delta-details">
+                        <div class="delta-item">
+                            <div class="delta-item-label">ΔL* (명도차)</div>
+                            <div class="delta-item-value">${(sample.L - state.target.L).toFixed(1)}</div>
+                        </div>
+                        <div class="delta-item">
+                            <div class="delta-item-label">Δa* (적녹차)</div>
+                            <div class="delta-item-value">${(sample.a - state.target.a).toFixed(1)}</div>
+                        </div>
+                        <div class="delta-item">
+                            <div class="delta-item-label">Δb* (황청차)</div>
+                            <div class="delta-item-value">${(sample.b - state.target.b).toFixed(1)}</div>
+                        </div>
+                        <div class="delta-item">
+                            <div class="delta-item-label">ΔE*00 (총색차)</div>
+                            <div class="delta-item-value">${deltaE.toFixed(2)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(sampleDiv);
+            
+            // 색상 업데이트
+            updateSampleColors(sample.id);
+            
+            // Lab 시각화 그리기
+            drawLabVisualization(sample.id, sample);
+        }
+        
+        // 시료 색상 업데이트
+        function updateSampleColors(sampleId) {
+            const sample = state.samples.find(s => s.id === sampleId);
+            if (!sample) return;
+            
+            // 목표 색상
+            const targetRgb = labToRgb(state.target.L, state.target.a, state.target.b);
+            const targetBox = document.getElementById(`${sampleId}_target`);
+            if (targetBox) {
+                targetBox.style.background = `rgb(${targetRgb.r}, ${targetRgb.g}, ${targetRgb.b})`;
+            }
+            
+            // 시료 색상
+            const sampleRgb = labToRgb(sample.L, sample.a, sample.b);
+            const sampleBox = document.getElementById(`${sampleId}_sample`);
+            if (sampleBox) {
+                sampleBox.style.background = `rgb(${sampleRgb.r}, ${sampleRgb.g}, ${sampleRgb.b})`;
+            }
+        }
+        
+        // Lab 시각화 그리기
+        function drawLabVisualization(sampleId, sample) {
+            // a*b* 평면 그리기
+            const abCanvas = document.getElementById(`${sampleId}_ab_canvas`);
+            if (!abCanvas) return;
+            
+            const abCtx = abCanvas.getContext('2d');
+            const width = abCanvas.width;
+            const height = abCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            
+            // 배경 클리어
+            abCtx.fillStyle = '#f8f9fa';
+            abCtx.fillRect(0, 0, width, height);
+            
+            // 격자 그리기
+            abCtx.strokeStyle = '#e0e0e0';
+            abCtx.lineWidth = 1;
+            
+            // 10 단위 격자
+            for (let i = 0; i <= width; i += 30) {
+                abCtx.beginPath();
+                abCtx.moveTo(i, 0);
+                abCtx.lineTo(i, height);
+                abCtx.stroke();
+            }
+            for (let i = 0; i <= height; i += 30) {
+                abCtx.beginPath();
+                abCtx.moveTo(0, i);
+                abCtx.lineTo(width, i);
+                abCtx.stroke();
+            }
+            
+            // 중심축 그리기
+            abCtx.strokeStyle = '#666';
+            abCtx.lineWidth = 2;
+            abCtx.beginPath();
+            abCtx.moveTo(centerX, 0);
+            abCtx.lineTo(centerX, height);
+            abCtx.stroke();
+            abCtx.beginPath();
+            abCtx.moveTo(0, centerY);
+            abCtx.lineTo(width, centerY);
+            abCtx.stroke();
+            
+            // 스케일 계산 (±50 범위를 기본으로)
+            const maxRange = Math.max(
+                Math.abs(state.target.a), Math.abs(state.target.b),
+                Math.abs(sample.a), Math.abs(sample.b), 50
+            );
+            const scale = (width / 2 - 20) / maxRange;
+            
+            // 허용 범위 원 그리기 (ΔE = 1, 2, 5)
+            const tolerances = [
+                { delta: 1, color: 'rgba(0, 255, 0, 0.1)', stroke: '#28a745' },
+                { delta: 2, color: 'rgba(255, 193, 7, 0.05)', stroke: '#ffc107' },
+                { delta: 5, color: 'rgba(255, 0, 0, 0.02)', stroke: '#dc3545' }
+            ];
+            
+            tolerances.forEach(tol => {
+                abCtx.beginPath();
+                abCtx.arc(
+                    centerX + state.target.a * scale,
+                    centerY - state.target.b * scale,
+                    tol.delta * scale * 2,
+                    0, 2 * Math.PI
+                );
+                abCtx.fillStyle = tol.color;
+                abCtx.fill();
+                abCtx.strokeStyle = tol.stroke;
+                abCtx.lineWidth = 1;
+                abCtx.setLineDash([5, 5]);
+                abCtx.stroke();
+                abCtx.setLineDash([]);
+            });
+            
+            // 목표 점 그리기
+            abCtx.beginPath();
+            abCtx.arc(
+                centerX + state.target.a * scale,
+                centerY - state.target.b * scale,
+                8, 0, 2 * Math.PI
+            );
+            abCtx.fillStyle = '#ff0000';
+            abCtx.fill();
+            abCtx.strokeStyle = '#cc0000';
+            abCtx.lineWidth = 2;
+            abCtx.stroke();
+            
+            // 목표 십자선
+            abCtx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+            abCtx.lineWidth = 1;
+            abCtx.beginPath();
+            abCtx.moveTo(centerX + state.target.a * scale - 15, centerY - state.target.b * scale);
+            abCtx.lineTo(centerX + state.target.a * scale + 15, centerY - state.target.b * scale);
+            abCtx.stroke();
+            abCtx.beginPath();
+            abCtx.moveTo(centerX + state.target.a * scale, centerY - state.target.b * scale - 15);
+            abCtx.lineTo(centerX + state.target.a * scale, centerY - state.target.b * scale + 15);
+            abCtx.stroke();
+            
+            // 시료 점 그리기
+            abCtx.beginPath();
+            abCtx.arc(
+                centerX + sample.a * scale,
+                centerY - sample.b * scale,
+                8, 0, 2 * Math.PI
+            );
+            abCtx.fillStyle = '#0066ff';
+            abCtx.fill();
+            abCtx.strokeStyle = '#0044cc';
+            abCtx.lineWidth = 2;
+            abCtx.stroke();
+            
+            // 연결선 그리기
+            abCtx.beginPath();
+            abCtx.moveTo(centerX + state.target.a * scale, centerY - state.target.b * scale);
+            abCtx.lineTo(centerX + sample.a * scale, centerY - sample.b * scale);
+            abCtx.strokeStyle = 'rgba(128, 128, 128, 0.5)';
+            abCtx.lineWidth = 2;
+            abCtx.setLineDash([5, 5]);
+            abCtx.stroke();
+            abCtx.setLineDash([]);
+            
+            // L* 축 그리기
+            const lCanvas = document.getElementById(`${sampleId}_l_canvas`);
+            if (!lCanvas) return;
+            
+            const lCtx = lCanvas.getContext('2d');
+            const lWidth = lCanvas.width;
+            const lHeight = lCanvas.height;
+            
+            // 배경 그라데이션
+            const gradient = lCtx.createLinearGradient(0, 0, 0, lHeight);
+            gradient.addColorStop(0, '#ffffff');
+            gradient.addColorStop(1, '#000000');
+            lCtx.fillStyle = gradient;
+            lCtx.fillRect(0, 0, lWidth, lHeight);
+            
+            // 스케일
+            const lScale = lHeight / 100;
+            
+            // 격자선
+            lCtx.strokeStyle = 'rgba(128, 128, 128, 0.3)';
+            lCtx.lineWidth = 1;
+            for (let i = 0; i <= 100; i += 10) {
+                const y = lHeight - i * lScale;
+                lCtx.beginPath();
+                lCtx.moveTo(0, y);
+                lCtx.lineTo(lWidth, y);
+                lCtx.stroke();
+                
+                // 레이블
+                lCtx.fillStyle = i > 50 ? '#000' : '#fff';
+                lCtx.font = '10px Arial';
+                lCtx.fillText(i.toString(), 5, y - 2);
+            }
+            
+            // 목표 L* 표시
+            const targetY = lHeight - state.target.L * lScale;
+            lCtx.fillStyle = '#ff0000';
+            lCtx.fillRect(0, targetY - 2, lWidth, 4);
+            
+            // 시료 L* 표시
+            const sampleY = lHeight - sample.L * lScale;
+            lCtx.fillStyle = '#0066ff';
+            lCtx.fillRect(0, sampleY - 2, lWidth, 4);
+            
+            // 허용 범위 표시
+            lCtx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+            lCtx.fillRect(0, targetY - 10, lWidth, 20);
+        }
+        
+        // 시료 이름 업데이트
+        function updateSampleName(sampleId, name) {
+            const sample = state.samples.find(s => s.id === sampleId);
+            if (sample) {
+                sample.name = name;
+            }
+        }
+        
+        // 시료 Lab 값 업데이트
+        function updateSampleLab(sampleId, component, value) {
+            const sample = state.samples.find(s => s.id === sampleId);
+            if (!sample) return;
+            
+            sample[component] = parseFloat(value) || 0;
+            
+            // Delta E 재계산
+            const deltaE = calculateDeltaE00(
+                state.target.L, state.target.a, state.target.b,
+                sample.L, sample.a, sample.b
+            );
+            
+            // Delta E 배지 업데이트
+            const sampleDiv = document.getElementById(sampleId);
+            const deltaBadge = sampleDiv.querySelector('.delta-badge');
+            
+            let deltaClass = 'delta-poor';
+            if (deltaE < 1.0) deltaClass = 'delta-excellent';
+            else if (deltaE < 2.0) deltaClass = 'delta-good';
+            
+            deltaBadge.className = `delta-badge ${deltaClass}`;
+            deltaBadge.textContent = `ΔE: ${deltaE.toFixed(2)}`;
+            
+            // Lab 값 표시 업데이트
+            const sampleLabValues = sampleDiv.querySelector(`#${sampleId}_sample .lab-values`);
+            sampleLabValues.textContent = `L*: ${sample.L.toFixed(1)} | a*: ${sample.a.toFixed(1)} | b*: ${sample.b.toFixed(1)}`;
+            
+            // 색상 업데이트
+            updateSampleColors(sampleId);
+            
+            // 시각화 업데이트
+            drawLabVisualization(sampleId, sample);
+            
+            // Delta 상세 정보 업데이트
+            const deltaDetails = sampleDiv.querySelector('.delta-details');
+            if (deltaDetails) {
+                deltaDetails.innerHTML = `
+                    <div class="delta-item">
+                        <div class="delta-item-label">ΔL* (명도차)</div>
+                        <div class="delta-item-value">${(sample.L - state.target.L).toFixed(1)}</div>
+                    </div>
+                    <div class="delta-item">
+                        <div class="delta-item-label">Δa* (적녹차)</div>
+                        <div class="delta-item-value">${(sample.a - state.target.a).toFixed(1)}</div>
+                    </div>
+                    <div class="delta-item">
+                        <div class="delta-item-label">Δb* (황청차)</div>
+                        <div class="delta-item-value">${(sample.b - state.target.b).toFixed(1)}</div>
+                    </div>
+                    <div class="delta-item">
+                        <div class="delta-item-label">ΔE*00 (총색차)</div>
+                        <div class="delta-item-value">${deltaE.toFixed(2)}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // 시료 삭제
+        function deleteSample(sampleId) {
+            if (confirm('이 시료를 삭제하시겠습니까?')) {
+                state.samples = state.samples.filter(s => s.id !== sampleId);
+                document.getElementById(sampleId).remove();
+            }
+        }
+        
+        // 모든 시료 업데이트
+        function updateAllSamples() {
+            state.samples.forEach(sample => {
+                updateSampleLab(sample.id, 'L', sample.L);
+            });
+        }
+        
+        // 잉크 입력 초기화
+        function initializeInkInputs() {
+            const container = document.getElementById('inkInputs');
+            container.innerHTML = '';
+            
+            // 상태 초기화
+            state.inks = baseInks.map(ink => ({
+                ...ink,
+                concentration: '100',
+                currentL: ink.L100,
+                currentA: ink.a100,
+                currentB: ink.b100,
+                percentage: 0
+            }));
+            
+            state.inks.forEach((ink, index) => {
+                const inkDiv = document.createElement('div');
+                inkDiv.className = 'ink-row';
+                inkDiv.innerHTML = `
+                    <div class="ink-name">${ink.name}</div>
+                    <div class="lab-inputs">
+                        <input type="number" id="ink_L_${index}" placeholder="L*" step="0.1" value="${ink.currentL}" onchange="updateInkLab(${index}, 'L', this.value)">
+                        <input type="number" id="ink_A_${index}" placeholder="a*" step="0.1" value="${ink.currentA}" onchange="updateInkLab(${index}, 'A', this.value)">
+                        <input type="number" id="ink_B_${index}" placeholder="b*" step="0.1" value="${ink.currentB}" onchange="updateInkLab(${index}, 'B', this.value)">
+                    </div>
+                    <div class="ink-concentration">
+                        <select class="concentration-select" onchange="updateInkConcentration(${index}, this.value)">
+                            <option value="100" selected>100% (원액)</option>
+                            <option value="70">70% (Satin 진한)</option>
+                            <option value="40">40% (Satin 연한)</option>
+                            <option value="custom">직접 입력</option>
+                        </select>
+                        <span class="concentration-badge" id="conc_badge_${index}">100%</span>
+                    </div>
+                `;
+                container.appendChild(inkDiv);
+            });
+        }
+        
+        // 잉크 농도 업데이트
+        function updateInkConcentration(index, concentration) {
+            const ink = state.inks[index];
+            ink.concentration = concentration;
+            
+            // 농도에 따른 Lab 값 자동 설정
+            if (concentration === '100') {
+                ink.currentL = ink.L100;
+                ink.currentA = ink.a100;
+                ink.currentB = ink.b100;
+            } else if (concentration === '70') {
+                ink.currentL = ink.L70;
+                ink.currentA = ink.a70;
+                ink.currentB = ink.b70;
+            } else if (concentration === '40') {
+                ink.currentL = ink.L40;
+                ink.currentA = ink.a40;
+                ink.currentB = ink.b40;
+            }
+            
+            // UI 업데이트
+            if (concentration !== 'custom') {
+                document.getElementById(`ink_L_${index}`).value = ink.currentL;
+                document.getElementById(`ink_A_${index}`).value = ink.currentA;
+                document.getElementById(`ink_B_${index}`).value = ink.currentB;
+            }
+            
+            document.getElementById(`conc_badge_${index}`).textContent = 
+                concentration === 'custom' ? '사용자' : concentration + '%';
+        }
+        
+        // 잉크 Lab 값 수동 업데이트
+        function updateInkLab(index, component, value) {
+            const ink = state.inks[index];
+            ink['current' + component] = parseFloat(value) || 0;
+            
+            // 수동 입력 시 custom으로 변경
+            const isCustom = 
+                (Math.abs(ink.currentL - ink.L100) > 0.5 || 
+                 Math.abs(ink.currentA - ink.a100) > 0.5 || 
+                 Math.abs(ink.currentB - ink.b100) > 0.5) &&
+                (Math.abs(ink.currentL - ink.L70) > 0.5 || 
+                 Math.abs(ink.currentA - ink.a70) > 0.5 || 
+                 Math.abs(ink.currentB - ink.b70) > 0.5) &&
+                (Math.abs(ink.currentL - ink.L40) > 0.5 || 
+                 Math.abs(ink.currentA - ink.a40) > 0.5 || 
+                 Math.abs(ink.currentB - ink.b40) > 0.5);
+            
+            if (isCustom && ink.concentration !== 'custom') {
+                ink.concentration = 'custom';
+                document.querySelector(`#inkInputs .ink-row:nth-child(${index + 1}) select`).value = 'custom';
+                document.getElementById(`conc_badge_${index}`).textContent = '사용자';
+            }
+        }
+        
+        // 최적 배합 계산
+        function calculateFormulation() {
+            const targetL = state.target.L;
+            const targetA = state.target.a;
+            const targetB = state.target.b;
+            
+            // 초기 배합 비율 설정 (선형 보간법 사용)
+            const formulation = optimizeFormulation(targetL, targetA, targetB);
+            
+            if (formulation) {
+                state.formulation = formulation;
+                displayFormulationResult(formulation);
+                saveToHistory(formulation);
+            }
+        }
+        
+        // 배합 최적화 알고리즘
+        function optimizeFormulation(targetL, targetA, targetB) {
+            const maxIterations = 1000;
+            let bestFormulation = null;
+            let bestDeltaE = Infinity;
+            
+            // 랜덤 초기화로 여러 번 시도
+            for (let attempt = 0; attempt < 10; attempt++) {
+                let percentages = initializeRandomPercentages();
+                
+                for (let iter = 0; iter < maxIterations; iter++) {
+                    // 현재 배합의 예상 Lab 값 계산
+                    const predicted = calculateMixedLab(percentages);
+                    const deltaE = calculateDeltaE(
+                        targetL, targetA, targetB,
+                        predicted.L, predicted.a, predicted.b
+                    );
+                    
+                    if (deltaE < bestDeltaE) {
+                        bestDeltaE = deltaE;
+                        bestFormulation = {
+                            percentages: [...percentages],
+                            predicted: predicted,
+                            deltaE: deltaE
+                        };
+                        
+                        // 목표 달성 시 종료
+                        if (deltaE < 0.5) break;
+                    }
+                    
+                    // 그라디언트 기반 개선
+                    percentages = improveFormulation(percentages, predicted, targetL, targetA, targetB);
+                }
+            }
+            
+            return bestFormulation;
+        }
+        
+        // 랜덤 초기 비율 생성
+        function initializeRandomPercentages() {
+            const percentages = [];
+            let remaining = 100;
+            
+            for (let i = 0; i < state.inks.length - 1; i++) {
+                const maxPossible = Math.min(remaining, 100 / state.inks.length * 2);
+                const percentage = Math.random() * maxPossible;
+                percentages.push(percentage);
+                remaining -= percentage;
+            }
+            percentages.push(remaining);
+            
+            return percentages;
+        }
+        
+        // 혼합 Lab 값 계산
+        function calculateMixedLab(percentages) {
+            let mixedL = 0, mixedA = 0, mixedB = 0;
+            let totalPercentage = 0;
+            
+            for (let i = 0; i < state.inks.length; i++) {
+                const ink = state.inks[i];
+                const percentage = percentages[i] / 100;
+                
+                mixedL += ink.currentL * percentage;
+                mixedA += ink.currentA * percentage;
+                mixedB += ink.currentB * percentage;
+                totalPercentage += percentage;
+            }
+            
+            // 원단 영향 고려 (간단한 보정)
+            const substrateL = parseFloat(document.getElementById('substrateL').value) || 95;
+            const substrateA = parseFloat(document.getElementById('substrateA').value) || 0;
+            const substrateB = parseFloat(document.getElementById('substrateB').value) || 0;
+            
+            // 원단과 잉크의 혼합 (간단한 선형 모델)
+            const inkOpacity = 0.85; // 잉크 불투명도
+            mixedL = mixedL * inkOpacity + substrateL * (1 - inkOpacity);
+            mixedA = mixedA * inkOpacity + substrateA * (1 - inkOpacity);
+            mixedB = mixedB * inkOpacity + substrateB * (1 - inkOpacity);
+            
+            return { L: mixedL, a: mixedA, b: mixedB };
+        }
+        
+        // 배합 개선
+        function improveFormulation(percentages, current, targetL, targetA, targetB) {
+            const newPercentages = [...percentages];
+            const learningRate = 0.1;
+            
+            // 각 잉크의 영향 계산
+            for (let i = 0; i < state.inks.length; i++) {
+                const ink = state.inks[i];
+                
+                // Lab 차이
+                const dL = targetL - current.L;
+                const dA = targetA - current.a;
+                const dB = targetB - current.b;
+                
+                // 잉크의 기여도 계산
+                const contributionL = (ink.currentL - current.L) * dL;
+                const contributionA = (ink.currentA - current.a) * dA;
+                const contributionB = (ink.currentB - current.b) * dB;
+                const totalContribution = contributionL + contributionA + contributionB;
+                
+                // 비율 조정
+                newPercentages[i] += totalContribution * learningRate;
+                newPercentages[i] = Math.max(0, Math.min(100, newPercentages[i]));
+            }
+            
+            // 정규화 (100%로)
+            const sum = newPercentages.reduce((a, b) => a + b, 0);
+            if (sum > 0) {
+                for (let i = 0; i < newPercentages.length; i++) {
+                    newPercentages[i] = (newPercentages[i] / sum) * 100;
+                }
+            }
+            
+            return newPercentages;
+        }
+        
+        // 배합 결과 표시
+        function displayFormulationResult(formulation) {
+            const resultDiv = document.getElementById('formulationResult');
+            
+            let deltaClass = 'delta-poor';
+            if (formulation.deltaE < 1.0) deltaClass = 'delta-excellent';
+            else if (formulation.deltaE < 2.0) deltaClass = 'delta-good';
+            
+            const predictedRgb = labToRgb(
+                formulation.predicted.L,
+                formulation.predicted.a,
+                formulation.predicted.b
+            );
+            
+            let formulaHTML = '';
+            for (let i = 0; i < state.inks.length; i++) {
+                const percentage = formulation.percentages[i];
+                if (percentage > 0.1) { // 0.1% 이상만 표시
+                    const ink = state.inks[i];
+                    formulaHTML += `
+                        <div class="ink-formula-item">
+                            <div class="ink-formula-name">${ink.name}</div>
+                            <div class="ink-formula-percentage">${percentage.toFixed(1)}%</div>
+                            <div class="ink-formula-concentration">${ink.concentration}% 농도</div>
+                        </div>
+                    `;
+                }
+            }
+            
+            resultDiv.innerHTML = `
+                <div class="formulation-header">
+                    <div class="formulation-title">🧪 최적 배합 결과</div>
+                    <div class="formulation-accuracy">
+                        <span>예상 정확도:</span>
+                        <span class="delta-badge ${deltaClass}">ΔE: ${formulation.deltaE.toFixed(2)}</span>
+                    </div>
+                </div>
+                
+                <div class="ink-formula">
+                    ${formulaHTML}
+                </div>
+                
+                <div class="predicted-color">
+                    <div class="predicted-color-title">예상 색상 비교</div>
+                    <div class="color-comparison">
+                        <div class="color-box" style="background: rgb(${state.target ? labToRgb(state.target.L, state.target.a, state.target.b).r : 0}, ${state.target ? labToRgb(state.target.L, state.target.a, state.target.b).g : 0}, ${state.target ? labToRgb(state.target.L, state.target.a, state.target.b).b : 0})">
+                            <div class="lab-values">
+                                L*: ${state.target.L.toFixed(1)} | a*: ${state.target.a.toFixed(1)} | b*: ${state.target.b.toFixed(1)}
+                            </div>
+                            <span class="color-label">목표</span>
+                        </div>
+                        <div class="color-box" style="background: rgb(${predictedRgb.r}, ${predictedRgb.g}, ${predictedRgb.b})">
+                            <div class="lab-values">
+                                L*: ${formulation.predicted.L.toFixed(1)} | a*: ${formulation.predicted.a.toFixed(1)} | b*: ${formulation.predicted.b.toFixed(1)}
+                            </div>
+                            <span class="color-label">예상</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="save-formula-btn" onclick="saveFormula()">
+                    💾 배합 저장
+                </button>
+            `;
+            
+            resultDiv.classList.remove('hidden');
+        }
+        
+        // 히스토리 저장
+        function saveToHistory(formulation) {
+            let history = JSON.parse(localStorage.getItem('inkFormulationHistory') || '[]');
+            
+            const historyItem = {
+                date: new Date().toISOString(),
+                target: { ...state.target },
+                formulation: formulation,
+                productName: document.getElementById('productName').value || '미지정',
+                colorCode: document.getElementById('colorCode').value || '미지정'
+            };
+            
+            history.unshift(historyItem);
+            history = history.slice(0, 50); // 최근 50개만 유지
+            
+            localStorage.setItem('inkFormulationHistory', JSON.stringify(history));
+            loadHistory();
+        }
+        
+        // 히스토리 불러오기
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('inkFormulationHistory') || '[]');
+            const historyList = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; color: #999;">저장된 배합이 없습니다.</p>';
+                return;
+            }
+            
+            historyList.innerHTML = history.slice(0, 10).map((item, index) => `
+                <div class="history-item" onclick="loadFormulation(${index})">
+                    <div class="history-date">${new Date(item.date).toLocaleString('ko-KR')}</div>
+                    <div>제품: ${item.productName} | 색상코드: ${item.colorCode}</div>
+                    <div class="history-delta">ΔE: ${item.formulation.deltaE.toFixed(2)}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('historyPanel').classList.remove('hidden');
+        }
+        
+        // 저장된 배합 불러오기
+        function loadFormulation(index) {
+            const history = JSON.parse(localStorage.getItem('inkFormulationHistory') || '[]');
+            const item = history[index];
+            
+            if (item) {
+                // 목표 색상 설정
+                document.getElementById('targetL').value = item.target.L;
+                document.getElementById('targetA').value = item.target.a;
+                document.getElementById('targetB').value = item.target.b;
+                updateTargetColor();
+                
+                // 배합 결과 표시
+                displayFormulationResult(item.formulation);
+                
+                // 제품 정보 설정
+                document.getElementById('productName').value = item.productName;
+                document.getElementById('colorCode').value = item.colorCode;
+            }
+        }
+        
+        // 배합 저장 버튼
+        function saveFormula() {
+            if (state.formulation) {
+                const name = prompt('배합 이름을 입력하세요:');
+                if (name) {
+                    alert(`"${name}" 배합이 저장되었습니다.`);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

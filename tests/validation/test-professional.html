@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전문가용 잉크 배합 시스템 검증</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .test-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        .test-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+        .test-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #495057;
+        }
+        .test-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-pending { background: #e9ecef; color: #6c757d; }
+        .status-running { background: #fff3cd; color: #856404; }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        
+        .color-display {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            align-items: center;
+        }
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .color-values {
+            flex: 1;
+        }
+        .lab-value {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .result-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+        }
+        .recipe-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+        .fluorescent-badge {
+            background: linear-gradient(90deg, #ff00ff, #00ffff);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .delta-e-display {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .delta-excellent { background: #d4edda; color: #155724; }
+        .delta-good { background: #cce5ff; color: #004085; }
+        .delta-fair { background: #fff3cd; color: #856404; }
+        .delta-poor { background: #f8d7da; color: #721c24; }
+        
+        .metamerism-alert {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .metamerism-safe {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .metamerism-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .recommendations {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        .rec-item {
+            margin: 8px 0;
+            display: flex;
+            align-items: start;
+            gap: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 전문가용 잉크 배합 시스템 검증</h1>
+        <p class="subtitle">2024 최신 기술 통합 - 형광 잉크, 스펙트럼 예측, 메타메리즘 분석</p>
+        
+        <div class="test-grid" id="test-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>테스트 준비 중...</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { ProfessionalMixingEngine } from './core/professionalMixingEngine.js';
+        import { ColorScience } from './core/colorScience.js';
+        
+        // 테스트 케이스 정의
+        const testCases = [
+            {
+                id: 'cyan-green',
+                name: '밝은 청록색',
+                target: { L: 80, a: -50, b: 20 },
+                description: '높은 채도의 청록색 (기존 문제 색상)',
+                expectedIssue: '일반 잉크로는 재현 어려움'
+            },
+            {
+                id: 'fluorescent-pink',
+                name: '형광 핑크',
+                target: { L: 65, a: 75, b: 15 },
+                description: '매우 높은 채도의 마젠타',
+                expectedIssue: '형광 잉크 필요'
+            },
+            {
+                id: 'deep-blue',
+                name: '깊은 파랑',
+                target: { L: 30, a: 20, b: -60 },
+                description: '어두운 파란색',
+                expectedIssue: '메타메리즘 주의'
+            },
+            {
+                id: 'neutral-gray',
+                name: '중성 회색',
+                target: { L: 60, a: 0, b: 0 },
+                description: '완벽한 무채색',
+                expectedIssue: '조명별 색상 변화'
+            },
+            {
+                id: 'bright-yellow',
+                name: '밝은 노랑',
+                target: { L: 92, a: -8, b: 85 },
+                description: '고명도 노란색',
+                expectedIssue: '형광 효과 권장'
+            },
+            {
+                id: 'forest-green',
+                name: '숲 녹색',
+                target: { L: 45, a: -40, b: 35 },
+                description: '자연스러운 녹색',
+                expectedIssue: '일반 재현 가능'
+            }
+        ];
+        
+        // 테스트 실행
+        async function runTests() {
+            const engine = new ProfessionalMixingEngine();
+            const gridEl = document.getElementById('test-grid');
+            gridEl.innerHTML = '';
+            
+            for (const testCase of testCases) {
+                const cardEl = createTestCard(testCase);
+                gridEl.appendChild(cardEl);
+                
+                // 상태 업데이트
+                updateStatus(cardEl, 'running');
+                
+                try {
+                    // 전문가 엔진으로 계산
+                    const result = await engine.findProfessionalMix(testCase.target, {
+                        maxInks: 5,
+                        includeWhite: true,
+                        concentrations: [100, 70, 40]
+                    });
+                    
+                    // 결과 표시
+                    displayResult(cardEl, result, testCase);
+                    updateStatus(cardEl, 'success');
+                    
+                } catch (error) {
+                    console.error(`Test ${testCase.id} failed:`, error);
+                    updateStatus(cardEl, 'failed');
+                    displayError(cardEl, error);
+                }
+                
+                // 시각적 효과를 위한 딜레이
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        // 테스트 카드 생성
+        function createTestCard(testCase) {
+            const card = document.createElement('div');
+            card.className = 'test-card';
+            card.dataset.testId = testCase.id;
+            
+            const rgb = ColorScience.labToRgb(testCase.target.L, testCase.target.a, testCase.target.b);
+            
+            card.innerHTML = `
+                <div class="test-header">
+                    <div class="test-title">${testCase.name}</div>
+                    <div class="test-status status-pending">대기</div>
+                </div>
+                <div class="test-content">
+                    <div class="color-display">
+                        <div class="color-swatch" style="background: rgb(${rgb.r}, ${rgb.g}, ${rgb.b})"></div>
+                        <div class="color-values">
+                            <div class="lab-value"><span>L*:</span><span>${testCase.target.L}</span></div>
+                            <div class="lab-value"><span>a*:</span><span>${testCase.target.a}</span></div>
+                            <div class="lab-value"><span>b*:</span><span>${testCase.target.b}</span></div>
+                        </div>
+                    </div>
+                    <p style="color: #6c757d; font-size: 14px;">${testCase.description}</p>
+                    <p style="color: #dc3545; font-size: 12px;">⚠️ ${testCase.expectedIssue}</p>
+                    <div class="result-container"></div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // 상태 업데이트
+        function updateStatus(card, status) {
+            const statusEl = card.querySelector('.test-status');
+            statusEl.className = `test-status status-${status}`;
+            statusEl.textContent = {
+                pending: '대기',
+                running: '계산 중',
+                success: '성공',
+                failed: '실패'
+            }[status];
+        }
+        
+        // 결과 표시
+        function displayResult(card, result, testCase) {
+            const container = card.querySelector('.result-container');
+            
+            // Delta E 표시
+            const deltaE = result.colorData?.deltaE || 0;
+            const deltaClass = deltaE < 1 ? 'delta-excellent' :
+                              deltaE < 2 ? 'delta-good' :
+                              deltaE < 5 ? 'delta-fair' : 'delta-poor';
+            
+            let html = `
+                <div class="result-section">
+                    <div class="delta-e-display ${deltaClass}">
+                        ΔE: ${deltaE.toFixed(2)} - ${result.colorData?.quality}
+                    </div>
+            `;
+            
+            // 레시피 표시
+            if (result.recipe?.inks) {
+                html += '<div style="font-weight: bold; margin: 15px 0;">배합 레시피:</div>';
+                result.recipe.inks.forEach(ink => {
+                    const fluorBadge = ink.type === 'fluorescent' ? 
+                        '<span class="fluorescent-badge">형광</span>' : '';
+                    html += `
+                        <div class="recipe-row">
+                            <span>${ink.name} ${ink.concentration}%</span>
+                            <span>${ink.percentage}% ${fluorBadge}</span>
+                        </div>
+                    `;
+                });
+            }
+            
+            // 형광 잉크 정보
+            if (result.fluorescenceData) {
+                html += `
+                    <div style="margin-top: 15px; padding: 10px; background: linear-gradient(135deg, rgba(255,0,255,0.1), rgba(0,255,255,0.1)); border-radius: 8px;">
+                        <strong>🌟 형광 효과</strong><br>
+                        UV 강도: ${(result.fluorescenceData.recommendedUVIntensity * 100).toFixed(0)}%<br>
+                        형광도: ${result.fluorescenceData.effectiveFluorescence?.toFixed(2)}
+                    </div>
+                `;
+            }
+            
+            // 메타메리즘 경고
+            if (result.metamerism) {
+                const alertClass = result.metamerism.isMetameric ? 'metamerism-warning' : 'metamerism-safe';
+                html += `
+                    <div class="metamerism-alert ${alertClass}">
+                        ${result.metamerism.isMetameric ? '⚠️' : '✅'}
+                        ${result.metamerism.warning}
+                    </div>
+                `;
+            }
+            
+            // 권장사항
+            if (result.recommendations && result.recommendations.length > 0) {
+                html += '<div class="recommendations"><strong>💡 권장사항</strong>';
+                result.recommendations.forEach(rec => {
+                    html += `<div class="rec-item">• ${rec.message}</div>`;
+                });
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // 에러 표시
+        function displayError(card, error) {
+            const container = card.querySelector('.result-container');
+            container.innerHTML = `
+                <div class="result-section" style="background: #f8d7da; color: #721c24;">
+                    <strong>오류 발생:</strong><br>
+                    ${error.message}
+                </div>
+            `;
+        }
+        
+        // 테스트 실행
+        setTimeout(runTests, 1000);
+    </script>
+</body>
+</html>

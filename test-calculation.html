@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Recipe Calculation Test</title>
+</head>
+<body>
+    <h1>레시피 계산 테스트</h1>
+    <div id="result"></div>
+
+    <script type="module">
+        // ColorScience 모듈 로드
+        import ColorScience from './core/colorScience.js';
+        import MixingEngine from './core/mixingEngine.js';
+        import AdvancedMixingEngine from './core/advancedMixingEngine.js';
+        
+        // 잉크 데이터 정의
+        const baseInks = [
+            { id: 'cyan', name: 'Process Cyan', lab: { L: 55, a: -37, b: -50 } },
+            { id: 'magenta', name: 'Process Magenta', lab: { L: 48, a: 74, b: -3 } },
+            { id: 'yellow', name: 'Process Yellow', lab: { L: 89, a: -5, b: 93 } },
+            { id: 'black', name: 'Process Black', lab: { L: 16, a: 0, b: 0 } }
+        ];
+
+        // 목표 색상: 중성 회색 Lab(50, 0, 0)
+        const targetLab = { L: 50, a: 0, b: 0 };
+
+        console.log('=== 레시피 계산 테스트 ===');
+        console.log('목표 색상:', targetLab);
+
+        // 1. Simple MixingEngine 테스트
+        console.log('\n1. Simple MixingEngine:');
+        const simpleEngine = new MixingEngine();
+        const simpleResult = simpleEngine.optimize(
+            targetLab,
+            baseInks.map(ink => ink.lab),
+            { method: 'simple', maxIterations: 100 }
+        );
+        
+        console.log('Simple 결과:');
+        console.log('- 비율:', simpleResult.ratios.map((r, i) => 
+            `${baseInks[i].name}: ${(r * 100).toFixed(1)}%`).join(', '));
+        console.log('- 혼합 색상:', simpleResult.mixed);
+        console.log('- Delta E:', simpleResult.deltaE.toFixed(2));
+
+        // 2. Advanced MixingEngine 테스트
+        console.log('\n2. Advanced MixingEngine:');
+        const advancedEngine = new AdvancedMixingEngine();
+        const advancedResult = await advancedEngine.optimize(
+            targetLab,
+            baseInks.map(ink => ink.lab),
+            { method: 'gradient', maxIterations: 200 }
+        );
+        
+        console.log('Advanced 결과:');
+        console.log('- 비율:', advancedResult.ratios.map((r, i) => 
+            `${baseInks[i].name}: ${(r * 100).toFixed(1)}%`).join(', '));
+        console.log('- 혼합 색상:', advancedResult.mixed);
+        console.log('- Delta E:', advancedResult.deltaE.toFixed(2));
+
+        // 3. 수동 계산 검증
+        console.log('\n3. 수동 검증:');
+        
+        // 중성 회색을 위한 이론적 배합
+        // Black이 주도하고 CMY로 색상 보정
+        const manualRatios = [0.1, 0.1, 0.1, 0.7]; // C:10%, M:10%, Y:10%, K:70%
+        let manualL = 0, manualA = 0, manualB = 0;
+        
+        for (let i = 0; i < baseInks.length; i++) {
+            manualL += baseInks[i].lab.L * manualRatios[i];
+            manualA += baseInks[i].lab.a * manualRatios[i];
+            manualB += baseInks[i].lab.b * manualRatios[i];
+        }
+        
+        const manualDeltaE = ColorScience.calculateDeltaE00(
+            targetLab.L, targetLab.a, targetLab.b,
+            manualL, manualA, manualB
+        );
+        
+        console.log('수동 계산 (C:10%, M:10%, Y:10%, K:70%):');
+        console.log('- 혼합 색상:', { L: manualL.toFixed(1), a: manualA.toFixed(1), b: manualB.toFixed(1) });
+        console.log('- Delta E:', manualDeltaE.toFixed(2));
+
+        // 결과를 HTML에 표시
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = `
+            <h2>계산 결과 비교</h2>
+            <table border="1" cellpadding="5">
+                <tr>
+                    <th>방법</th>
+                    <th>Cyan</th>
+                    <th>Magenta</th>
+                    <th>Yellow</th>
+                    <th>Black</th>
+                    <th>Delta E</th>
+                </tr>
+                <tr>
+                    <td>Simple</td>
+                    ${simpleResult.ratios.map(r => `<td>${(r * 100).toFixed(1)}%</td>`).join('')}
+                    <td>${simpleResult.deltaE.toFixed(2)}</td>
+                </tr>
+                <tr>
+                    <td>Advanced</td>
+                    ${advancedResult.ratios.map(r => `<td>${(r * 100).toFixed(1)}%</td>`).join('')}
+                    <td>${advancedResult.deltaE.toFixed(2)}</td>
+                </tr>
+                <tr>
+                    <td>Manual (이론값)</td>
+                    <td>10.0%</td>
+                    <td>10.0%</td>
+                    <td>10.0%</td>
+                    <td>70.0%</td>
+                    <td>${manualDeltaE.toFixed(2)}</td>
+                </tr>
+            </table>
+            
+            <h3>목표 색상: Lab(50, 0, 0) - 중성 회색</h3>
+            <p>중성 회색은 Black 잉크를 주로 사용하고, CMY로 색상을 보정해야 합니다.</p>
+            <p>일반적으로 Black 60-80%, CMY 각 5-15% 정도가 적절합니다.</p>
+        `;
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 음수 입력 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .input-group {
+            margin: 20px 0;
+            display: grid;
+            grid-template-columns: 80px 200px auto;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+        
+        .range {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .output {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .output h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .values {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .value-box {
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .value-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .value-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .tips {
+            margin-top: 30px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            border-radius: 5px;
+        }
+        
+        .tips h4 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        
+        .tips ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        
+        .tips li {
+            margin: 5px 0;
+            color: #555;
+        }
+        
+        .color-preview {
+            width: 100%;
+            height: 100px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 2px solid #ddd;
+            transition: all 0.3s;
+        }
+        
+        .test-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+        
+        .negative { color: #dc3545; }
+        .positive { color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Lab 색상 음수 입력 테스트</h1>
+        
+        <div class="input-group">
+            <label for="L">L*</label>
+            <input type="text" id="L" placeholder="50" value="50">
+            <span class="range">(0-100) 명도</span>
+        </div>
+        
+        <div class="input-group">
+            <label for="a">a*</label>
+            <input type="text" id="a" placeholder="-20" value="0">
+            <span class="range">(-128 ~ 128) 빨강-녹색</span>
+        </div>
+        
+        <div class="input-group">
+            <label for="b">b*</label>
+            <input type="text" id="b" placeholder="-30" value="0">
+            <span class="range">(-128 ~ 128) 노랑-파랑</span>
+        </div>
+        
+        <div class="test-buttons">
+            <button onclick="testNegativeValues()">음수 값 테스트 (-50, -30)</button>
+            <button onclick="testPositiveValues()">양수 값 테스트 (40, 60)</button>
+            <button onclick="testMixedValues()">혼합 값 테스트 (-20, 40)</button>
+            <button onclick="clearValues()">초기화</button>
+        </div>
+        
+        <div class="output">
+            <h3>현재 Lab 값</h3>
+            <div class="values">
+                <div class="value-box">
+                    <div class="value-label">L* (명도)</div>
+                    <div class="value-number" id="L-output">50</div>
+                </div>
+                <div class="value-box">
+                    <div class="value-label">a* (빨강-녹색)</div>
+                    <div class="value-number" id="a-output">0</div>
+                </div>
+                <div class="value-box">
+                    <div class="value-label">b* (노랑-파랑)</div>
+                    <div class="value-number" id="b-output">0</div>
+                </div>
+            </div>
+            
+            <div class="color-preview" id="color-preview"></div>
+        </div>
+        
+        <div class="tips">
+            <h4>💡 입력 테스트 가이드</h4>
+            <ul>
+                <li><strong>음수 입력:</strong> 마이너스(-) 기호를 먼저 입력한 후 숫자를 입력하세요.</li>
+                <li><strong>화살표 키:</strong> ↑↓ 키로 값을 1씩 조정할 수 있습니다.</li>
+                <li><strong>복사/붙여넣기:</strong> Ctrl+V로 음수 값을 붙여넣을 수 있습니다.</li>
+                <li><strong>a* 값:</strong> <span class="negative">양수는 빨강</span>, <span class="positive">음수는 녹색</span></li>
+                <li><strong>b* 값:</strong> <span style="color: #ffc107;">양수는 노랑</span>, <span style="color: #0366d6;">음수는 파랑</span></li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Lab to RGB 변환 함수
+        function labToRgb(L, a, b) {
+            // Lab to XYZ
+            const fy = (L + 16) / 116;
+            const fx = a / 500 + fy;
+            const fz = fy - b / 200;
+            
+            const xr = fx ** 3 > 0.008856 ? fx ** 3 : (fx * 116 - 16) / 903.3;
+            const yr = L > 7.9996 ? fy ** 3 : L / 903.3;
+            const zr = fz ** 3 > 0.008856 ? fz ** 3 : (fz * 116 - 16) / 903.3;
+            
+            const X = xr * 95.047;
+            const Y = yr * 100.000;
+            const Z = zr * 108.883;
+            
+            // XYZ to RGB
+            let r = X * 3.2406 + Y * -1.5372 + Z * -0.4986;
+            let g = X * -0.9689 + Y * 1.8758 + Z * 0.0415;
+            let b_val = X * 0.0557 + Y * -0.2040 + Z * 1.0570;
+            
+            r = r > 0.0031308 ? 1.055 * (r ** (1 / 2.4)) - 0.055 : 12.92 * r;
+            g = g > 0.0031308 ? 1.055 * (g ** (1 / 2.4)) - 0.055 : 12.92 * g;
+            b_val = b_val > 0.0031308 ? 1.055 * (b_val ** (1 / 2.4)) - 0.055 : 12.92 * b_val;
+            
+            return {
+                r: Math.max(0, Math.min(255, Math.round(r * 255))),
+                g: Math.max(0, Math.min(255, Math.round(g * 255))),
+                b: Math.max(0, Math.min(255, Math.round(b_val * 255)))
+            };
+        }
+        
+        // 색상 업데이트 함수
+        function updateColor() {
+            const L = parseFloat(document.getElementById('L').value) || 0;
+            const a = parseFloat(document.getElementById('a').value) || 0;
+            const b = parseFloat(document.getElementById('b').value) || 0;
+            
+            // 출력 업데이트
+            document.getElementById('L-output').textContent = L.toFixed(1);
+            document.getElementById('a-output').textContent = a.toFixed(1);
+            document.getElementById('b-output').textContent = b.toFixed(1);
+            
+            // a* 값 색상 적용
+            const aOutput = document.getElementById('a-output');
+            if (a < 0) {
+                aOutput.style.color = '#22863a'; // 녹색
+            } else if (a > 0) {
+                aOutput.style.color = '#dc3545'; // 빨강
+            } else {
+                aOutput.style.color = '#333';
+            }
+            
+            // b* 값 색상 적용
+            const bOutput = document.getElementById('b-output');
+            if (b < 0) {
+                bOutput.style.color = '#0366d6'; // 파랑
+            } else if (b > 0) {
+                bOutput.style.color = '#ffc107'; // 노랑
+            } else {
+                bOutput.style.color = '#333';
+            }
+            
+            // 색상 미리보기 업데이트
+            const rgb = labToRgb(L, a, b);
+            const colorPreview = document.getElementById('color-preview');
+            colorPreview.style.backgroundColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        }
+        
+        // 입력 이벤트 리스너
+        document.getElementById('L').addEventListener('input', function(e) {
+            console.log('L 입력:', e.target.value);
+            updateColor();
+        });
+        
+        document.getElementById('a').addEventListener('input', function(e) {
+            console.log('a* 입력:', e.target.value);
+            updateColor();
+        });
+        
+        document.getElementById('b').addEventListener('input', function(e) {
+            console.log('b* 입력:', e.target.value);
+            updateColor();
+        });
+        
+        // blur 이벤트로 유효성 검증
+        ['L', 'a', 'b'].forEach(id => {
+            document.getElementById(id).addEventListener('blur', function(e) {
+                const value = parseFloat(e.target.value);
+                if (isNaN(value)) {
+                    e.target.value = '0';
+                } else if (id === 'L') {
+                    e.target.value = Math.max(0, Math.min(100, value));
+                } else {
+                    e.target.value = Math.max(-128, Math.min(128, value));
+                }
+                updateColor();
+            });
+        });
+        
+        // 화살표 키 지원
+        ['L', 'a', 'b'].forEach(id => {
+            document.getElementById(id).addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const currentValue = parseFloat(e.target.value) || 0;
+                    const delta = e.key === 'ArrowUp' ? 1 : -1;
+                    const newValue = currentValue + delta;
+                    
+                    if (id === 'L') {
+                        e.target.value = Math.max(0, Math.min(100, newValue));
+                    } else {
+                        e.target.value = Math.max(-128, Math.min(128, newValue));
+                    }
+                    updateColor();
+                }
+            });
+        });
+        
+        // 테스트 함수들
+        function testNegativeValues() {
+            document.getElementById('L').value = '50';
+            document.getElementById('a').value = '-50';
+            document.getElementById('b').value = '-30';
+            updateColor();
+            console.log('음수 값 테스트: a*=-50, b*=-30');
+        }
+        
+        function testPositiveValues() {
+            document.getElementById('L').value = '70';
+            document.getElementById('a').value = '40';
+            document.getElementById('b').value = '60';
+            updateColor();
+            console.log('양수 값 테스트: a*=40, b*=60');
+        }
+        
+        function testMixedValues() {
+            document.getElementById('L').value = '60';
+            document.getElementById('a').value = '-20';
+            document.getElementById('b').value = '40';
+            updateColor();
+            console.log('혼합 값 테스트: a*=-20, b*=40');
+        }
+        
+        function clearValues() {
+            document.getElementById('L').value = '50';
+            document.getElementById('a').value = '0';
+            document.getElementById('b').value = '0';
+            updateColor();
+            console.log('값 초기화');
+        }
+        
+        // 초기 색상 업데이트
+        updateColor();
+        
+        console.log('Lab 음수 입력 테스트 준비 완료');
+        console.log('콘솔에서 입력 값 변화를 확인할 수 있습니다.');
+    </script>
+</body>
+</html>

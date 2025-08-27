@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>애플리케이션 기능 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        .status {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .pass { color: green; }
+        .fail { color: red; }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f7f7f7;
+            border-radius: 8px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 원라벨 잉크 계산기 - 기능 테스트</h1>
+        
+        <div class="test-section">
+            <h2>1. 애플리케이션 상태 확인</h2>
+            <button class="btn" onclick="checkAppStatus()">앱 상태 확인</button>
+            <span id="app-status" class="status"></span>
+        </div>
+
+        <div class="test-section">
+            <h2>2. 코어 모듈 테스트</h2>
+            <button class="btn" onclick="testCoreModules()">코어 모듈 테스트</button>
+            <span id="core-status" class="status"></span>
+        </div>
+
+        <div class="test-section">
+            <h2>3. 색상 계산 테스트</h2>
+            <button class="btn" onclick="testColorCalculation()">색상 계산 테스트</button>
+            <span id="calc-status" class="status"></span>
+        </div>
+
+        <div class="test-section">
+            <h2>4. React 앱 접속</h2>
+            <button class="btn" onclick="openReactApp()">React 앱 열기</button>
+            <button class="btn" onclick="openLegacyApp()">레거시 앱 열기</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        window.checkAppStatus = async function() {
+            const statusEl = document.getElementById('app-status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                const response = await fetch('http://localhost:3000');
+                if (response.ok) {
+                    statusEl.innerHTML = '<span class="pass">✓ 서버 실행 중</span>';
+                    resultsEl.textContent = 'Vite 개발 서버가 포트 3000에서 정상 실행 중입니다.';
+                } else {
+                    statusEl.innerHTML = '<span class="fail">✗ 서버 응답 오류</span>';
+                    resultsEl.textContent = '서버는 실행 중이지만 응답에 문제가 있습니다.';
+                }
+            } catch (error) {
+                statusEl.innerHTML = '<span class="fail">✗ 서버 연결 실패</span>';
+                resultsEl.textContent = '서버가 실행되지 않았거나 접속할 수 없습니다.\n' + error.message;
+            }
+        };
+
+        window.testCoreModules = async function() {
+            const statusEl = document.getElementById('core-status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                // 코어 모듈 로드 테스트
+                const modules = [];
+                
+                // 각 모듈 확인
+                const tests = [
+                    { name: 'ColorScience', path: './core/colorScience.js' },
+                    { name: 'InkDatabase', path: './core/inkDatabase.js' },
+                    { name: 'MixingEngine', path: './core/mixingEngine.js' }
+                ];
+                
+                let allPass = true;
+                let results = '코어 모듈 테스트 결과:\n';
+                
+                for (const test of tests) {
+                    try {
+                        const module = await import(test.path);
+                        results += `✓ ${test.name} 로드 성공\n`;
+                    } catch (e) {
+                        results += `✗ ${test.name} 로드 실패: ${e.message}\n`;
+                        allPass = false;
+                    }
+                }
+                
+                if (allPass) {
+                    statusEl.innerHTML = '<span class="pass">✓ 모든 모듈 정상</span>';
+                } else {
+                    statusEl.innerHTML = '<span class="fail">✗ 일부 모듈 오류</span>';
+                }
+                resultsEl.textContent = results;
+                
+            } catch (error) {
+                statusEl.innerHTML = '<span class="fail">✗ 테스트 실패</span>';
+                resultsEl.textContent = '코어 모듈 테스트 중 오류: ' + error.message;
+            }
+        };
+
+        window.testColorCalculation = async function() {
+            const statusEl = document.getElementById('calc-status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                const { ColorScience } = await import('./core/colorScience.js');
+                
+                // Delta E 2000 계산 테스트
+                const deltaE = ColorScience.calculateDeltaE00(50, 0, 0, 52, -1, 2);
+                
+                let results = '색상 계산 테스트:\n';
+                results += `Lab1: L=50, a=0, b=0\n`;
+                results += `Lab2: L=52, a=-1, b=2\n`;
+                results += `Delta E 2000: ${deltaE.toFixed(2)}\n`;
+                
+                if (deltaE > 0 && deltaE < 100) {
+                    statusEl.innerHTML = '<span class="pass">✓ 계산 성공</span>';
+                    results += '\n색상 차이 계산이 정상적으로 작동합니다.';
+                } else {
+                    statusEl.innerHTML = '<span class="fail">✗ 계산 오류</span>';
+                    results += '\n계산 결과가 예상 범위를 벗어났습니다.';
+                }
+                
+                resultsEl.textContent = results;
+                
+            } catch (error) {
+                statusEl.innerHTML = '<span class="fail">✗ 테스트 실패</span>';
+                resultsEl.textContent = '색상 계산 테스트 중 오류: ' + error.message;
+            }
+        };
+
+        window.openReactApp = function() {
+            window.open('http://localhost:3000', '_blank');
+        };
+
+        window.openLegacyApp = function() {
+            window.open('./improved_color_test_v3.html', '_blank');
+        };
+    </script>
+</body>
+</html>

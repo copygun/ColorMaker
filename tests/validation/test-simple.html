@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간단한 청록색 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .color-box {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            margin: 10px 0;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .result-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 청록색 (Cyan-Green) 색상 배합 테스트</h1>
+        
+        <div class="test-info">
+            <h2>문제 색상</h2>
+            <p><strong>목표 Lab 값:</strong> L*: 80, a*: -50, b*: 20</p>
+            <p><strong>이전 Delta E:</strong> 12.60 (매우 높음)</p>
+            <div class="color-box" id="targetColor"></div>
+        </div>
+        
+        <button onclick="runTest()">테스트 실행</button>
+        
+        <div id="results" class="results"></div>
+    </div>
+
+    <script type="module">
+        import { OptimizedMixingEngine } from './core/optimizedMixingEngine.js';
+        import { baseInks } from './core/inkDatabase.js';
+        import { ColorScience } from './core/colorScience.js';
+        
+        window.runTest = function() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>테스트 결과</h2>';
+            
+            const targetLab = { L: 80, a: -50, b: 20 };
+            
+            // 목표 색상 표시
+            const rgb = ColorScience.labToRgb(targetLab.L, targetLab.a, targetLab.b);
+            document.getElementById('targetColor').style.background = 
+                `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+            
+            // OptimizedMixingEngine 테스트
+            try {
+                const engine = new OptimizedMixingEngine();
+                const result = engine.findOptimalMix(targetLab, baseInks, {
+                    maxInks: 5,
+                    preferredConcentrations: [100, 70, 40],
+                    includeWhite: true,
+                    costWeight: 0.2
+                });
+                
+                const formatted = engine.formatResult(result);
+                
+                // Delta E 확인
+                const deltaClass = formatted.deltaE < 3 ? 'success' : 
+                                  formatted.deltaE < 6 ? 'warning' : 'error';
+                
+                resultsDiv.innerHTML += `
+                    <div class="result-item ${deltaClass}">
+                        <h3>최적화 엔진 결과</h3>
+                        <p><strong>Delta E:</strong> ${formatted.deltaE} (${formatted.quality})</p>
+                        <p><strong>개선도:</strong> ${(12.60 - formatted.deltaE).toFixed(2)} 감소</p>
+                    </div>
+                `;
+                
+                // 레시피 표시
+                if (formatted.recipe && formatted.recipe.length > 0) {
+                    let recipeHtml = '<div class="result-item"><h3>잉크 배합 레시피</h3><ul>';
+                    formatted.recipe.forEach(ink => {
+                        recipeHtml += `<li>${ink.name} ${ink.concentration}%: ${ink.percentage}%</li>`;
+                    });
+                    recipeHtml += '</ul></div>';
+                    resultsDiv.innerHTML += recipeHtml;
+                }
+                
+                // 달성된 색상 표시
+                if (result.mixedLab) {
+                    const mixedRgb = ColorScience.labToRgb(
+                        result.mixedLab.L, 
+                        result.mixedLab.a, 
+                        result.mixedLab.b
+                    );
+                    resultsDiv.innerHTML += `
+                        <div class="result-item">
+                            <h3>달성된 색상</h3>
+                            <p>L*: ${result.mixedLab.L.toFixed(1)}, 
+                               a*: ${result.mixedLab.a.toFixed(1)}, 
+                               b*: ${result.mixedLab.b.toFixed(1)}</p>
+                            <div class="color-box" style="background: rgb(${mixedRgb.r}, ${mixedRgb.g}, ${mixedRgb.b})"></div>
+                        </div>
+                    `;
+                }
+                
+                // 형광 잉크 확인
+                const hasFlourescent = formatted.recipe?.some(ink => ink.name.includes('Fluorescent'));
+                if (hasFlourescent) {
+                    resultsDiv.innerHTML += `
+                        <div class="result-item success">
+                            <h3>🌟 형광 잉크 사용</h3>
+                            <p>높은 채도 달성을 위해 형광 잉크가 포함되었습니다.</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="result-item error">
+                        <h3>오류 발생</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        };
+        
+        // 페이지 로드 시 목표 색상 표시
+        window.addEventListener('load', () => {
+            const rgb = ColorScience.labToRgb(80, -50, 20);
+            document.getElementById('targetColor').style.background = 
+                `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Recipe Recommender Test</title>
+</head>
+<body>
+    <h1>레시피 추천 시스템 테스트</h1>
+    <div id="result"></div>
+
+    <script>
+        // Mock ColorScience
+        window.ColorScience = {
+            calculateDeltaE00: function(L1, a1, b1, L2, a2, b2) {
+                const dL = L1 - L2;
+                const da = a1 - a2;
+                const db = b1 - b2;
+                return Math.sqrt(dL * dL + da * da + db * db);
+            }
+        };
+
+        // Mock inkDatabase
+        const mockInkDatabase = {
+            getAllInks: function() {
+                return [
+                    { id: 'cyan', name: 'Process Cyan', type: 'process' },
+                    { id: 'magenta', name: 'Process Magenta', type: 'process' },
+                    { id: 'yellow', name: 'Process Yellow', type: 'process' },
+                    { id: 'black', name: 'Process Black', type: 'process' },
+                    { id: 'cool_gray', name: 'Cool Gray 7', type: 'spot' },
+                    { id: 'warm_gray', name: 'Warm Gray 3', type: 'spot' }
+                ];
+            },
+            getInkById: function(id) {
+                return this.getAllInks().find(ink => ink.id === id);
+            }
+        };
+    </script>
+
+    <!-- Load the recommender -->
+    <script src="core/recipeRecommender.js"></script>
+
+    <script>
+        // Test
+        console.log('Testing RecipeRecommender...');
+        
+        try {
+            const recommender = new RecipeRecommender(mockInkDatabase, window.ColorScience);
+            
+            // Test case: neutral gray (Lab 50, 0, 0)
+            const targetLab = { L: 50, a: 0, b: 0 };
+            const currentInks = ['cyan', 'magenta', 'yellow', 'black'];
+            const currentRecipe = {
+                deltaE: 0.46,
+                mixed: { L: 50, a: -1, b: 0 },
+                target: targetLab,
+                inks: [
+                    { inkId: 'black', ratio: 34.7 },
+                    { inkId: 'cyan', ratio: 25.4 },
+                    { inkId: 'magenta', ratio: 14.0 },
+                    { inkId: 'yellow', ratio: 14.0 },
+                    { inkId: 'white', ratio: 11.9 }
+                ]
+            };
+            
+            const recommendations = recommender.recommendAlternatives(
+                targetLab,
+                currentInks,
+                currentRecipe
+            );
+            
+            console.log('Recommendations:', recommendations);
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<h2>추천 결과:</h2>';
+            
+            if (recommendations.length > 0) {
+                recommendations.forEach((rec, idx) => {
+                    resultDiv.innerHTML += `
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                            <h3>${idx + 1}. ${rec.name}</h3>
+                            <p>${rec.description}</p>
+                            <p><strong>예상 ΔE:</strong> ${rec.expectedDeltaE}</p>
+                            <p><strong>신뢰도:</strong> ${(rec.confidence * 100).toFixed(0)}%</p>
+                            <p><strong>이유:</strong> ${rec.reason}</p>
+                            <h4>잉크 구성:</h4>
+                            <ul>
+                                ${rec.inks.map(ink => `<li>${ink.name}: ${ink.ratio.toFixed(1)}%</li>`).join('')}
+                            </ul>
+                            ${rec.advantages ? `
+                                <h4>장점:</h4>
+                                <ul>
+                                    ${rec.advantages.map(adv => `<li>${adv}</li>`).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            } else {
+                resultDiv.innerHTML += '<p>추천 결과가 없습니다.</p>';
+            }
+            
+            console.log('Test completed successfully!');
+        } catch (error) {
+            console.error('Test failed:', error);
+            document.getElementById('result').innerHTML = `
+                <h2 style="color: red;">오류 발생:</h2>
+                <pre>${error.message}</pre>
+                <pre>${error.stack}</pre>
+            `;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>색상 보정 예측 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .color-display {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .color-box {
+            width: 150px;
+            height: 100px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .results {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .correction-suggestion {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .predicted-result {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0051D5;
+        }
+        .delta-e {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .excellent { color: #4CAF50; }
+        .good { color: #8BC34A; }
+        .fair { color: #FFC107; }
+        .poor { color: #FF5722; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🎯 색상 보정 예측 테스트</h1>
+        
+        <div class="test-section">
+            <h2>테스트 시나리오</h2>
+            <p>목표 색상과 실제 인쇄 색상 간의 차이를 분석하고, 보정 제안과 예측 결과를 표시합니다.</p>
+        </div>
+
+        <div class="test-section">
+            <h2>색상 설정</h2>
+            <div class="color-display">
+                <div>
+                    <h3>목표 색상 (Target)</h3>
+                    <div id="targetColor" class="color-box"></div>
+                    <div id="targetLab"></div>
+                </div>
+                <div>
+                    <h3>실제 색상 (Actual)</h3>
+                    <div id="actualColor" class="color-box"></div>
+                    <div id="actualLab"></div>
+                </div>
+                <div>
+                    <h3>예측 색상 (Predicted)</h3>
+                    <div id="predictedColor" class="color-box"></div>
+                    <div id="predictedLab"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>분석 결과</h2>
+            <div id="analysisResult" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>보정 제안</h2>
+            <div id="correctionSuggestions"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>예측 결과</h2>
+            <div id="predictedResults" class="predicted-result"></div>
+        </div>
+
+        <div class="test-section">
+            <button onclick="runTest1()">테스트 1: 명도 보정</button>
+            <button onclick="runTest2()">테스트 2: 채도 보정</button>
+            <button onclick="runTest3()">테스트 3: 색상 보정</button>
+            <button onclick="runTest4()">테스트 4: 복합 보정</button>
+        </div>
+
+        <div id="testLog" class="test-section">
+            <h2>테스트 로그</h2>
+            <pre id="log"></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        import CorrectionEngine from '../../core/correctionEngine.js';
+        import { inkDB } from '../../core/inkDatabase.js';
+        import ColorScience from '../../core/colorScience.js';
+
+        window.correctionEngine = new CorrectionEngine();
+        window.ColorScience = ColorScience;
+        window.inkDB = inkDB;
+
+        function labToRgb(L, a, b) {
+            const rgb = ColorScience.labToRgb(L, a, b);
+            return `rgb(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)})`;
+        }
+
+        function displayColor(elementId, lab, label) {
+            const element = document.getElementById(elementId);
+            element.style.backgroundColor = labToRgb(lab.L, lab.a, lab.b);
+            element.textContent = label;
+            
+            const labElement = document.getElementById(elementId.replace('Color', 'Lab'));
+            if (labElement) {
+                labElement.innerHTML = `L: ${lab.L.toFixed(1)}<br>a: ${lab.a.toFixed(1)}<br>b: ${lab.b.toFixed(1)}`;
+            }
+        }
+
+        function log(message) {
+            const logElement = document.getElementById('log');
+            logElement.textContent += message + '\n';
+        }
+
+        window.runTest1 = function() {
+            log('\n=== 테스트 1: 명도 보정 ===');
+            const targetLab = { L: 70, a: 10, b: 30 };
+            const actualLab = { L: 55, a: 10, b: 30 };  // 명도가 낮음
+            runCorrection(targetLab, actualLab, '명도 보정');
+        };
+
+        window.runTest2 = function() {
+            log('\n=== 테스트 2: 채도 보정 ===');
+            const targetLab = { L: 50, a: 40, b: 20 };
+            const actualLab = { L: 50, a: 25, b: 15 };  // 채도가 낮음
+            runCorrection(targetLab, actualLab, '채도 보정');
+        };
+
+        window.runTest3 = function() {
+            log('\n=== 테스트 3: 색상 보정 ===');
+            const targetLab = { L: 60, a: -30, b: 40 };  // 녹황색
+            const actualLab = { L: 60, a: -10, b: 30 };  // 덜 녹색, 덜 황색
+            runCorrection(targetLab, actualLab, '색상 보정');
+        };
+
+        window.runTest4 = function() {
+            log('\n=== 테스트 4: 복합 보정 ===');
+            const targetLab = { L: 75, a: 20, b: -30 };  // 밝은 보라색
+            const actualLab = { L: 60, a: 10, b: -20 };  // 어둡고 탁한 보라색
+            runCorrection(targetLab, actualLab, '복합 보정');
+        };
+
+        function runCorrection(targetLab, actualLab, testName) {
+            // 색상 표시
+            displayColor('targetColor', targetLab, 'Target');
+            displayColor('actualColor', actualLab, 'Actual');
+            
+            // 현재 레시피 (예시)
+            const currentRecipe = [
+                { inkId: 'cyan', ratio: 30, concentration: 100 },
+                { inkId: 'magenta', ratio: 25, concentration: 100 },
+                { inkId: 'yellow', ratio: 35, concentration: 100 },
+                { inkId: 'black', ratio: 10, concentration: 100 }
+            ];
+            
+            // 보정 분석
+            const analysis = correctionEngine.analyzeCorrection(
+                targetLab,
+                actualLab,
+                currentRecipe,
+                inkDB
+            );
+            
+            // 분석 결과 표시
+            const analysisDiv = document.getElementById('analysisResult');
+            analysisDiv.innerHTML = `
+                <h3>색차 분석</h3>
+                <div class="delta-e ${
+                    analysis.deltaE < 1 ? 'excellent' :
+                    analysis.deltaE < 2 ? 'good' :
+                    analysis.deltaE < 5 ? 'fair' : 'poor'
+                }">
+                    Delta E: ${analysis.deltaE.toFixed(2)}
+                </div>
+                <p>ΔL: ${analysis.colorDifference.dL.toFixed(2)}</p>
+                <p>Δa: ${analysis.colorDifference.da.toFixed(2)}</p>
+                <p>Δb: ${analysis.colorDifference.db.toFixed(2)}</p>
+                <p>보정 가능: ${analysis.feasibility.isPossible ? '✅ 예' : '❌ 아니오'}</p>
+                ${analysis.feasibility.reason ? `<p>이유: ${analysis.feasibility.reason}</p>` : ''}
+            `;
+            
+            log(`${testName} - Delta E: ${analysis.deltaE.toFixed(2)}`);
+            log(`색차: ΔL=${analysis.colorDifference.dL.toFixed(2)}, Δa=${analysis.colorDifference.da.toFixed(2)}, Δb=${analysis.colorDifference.db.toFixed(2)}`);
+            
+            // 보정 가능한 경우
+            if (analysis.feasibility.isPossible && analysis.feasibility.correctionInks) {
+                // 보정 레시피 계산
+                const corrections = correctionEngine.calculateCorrectionRecipe(
+                    targetLab,
+                    actualLab,
+                    currentRecipe,
+                    analysis.feasibility.correctionInks
+                );
+                
+                // 보정 제안 표시
+                const suggestionsDiv = document.getElementById('correctionSuggestions');
+                suggestionsDiv.innerHTML = '<h3>보정 제안</h3>';
+                corrections.forEach(correction => {
+                    const div = document.createElement('div');
+                    div.className = 'correction-suggestion';
+                    div.innerHTML = `
+                        <strong>${correction.name}</strong>: +${correction.addAmount.toFixed(1)}%<br>
+                        예상 영향: ΔL=${correction.expectedImpact.dL.toFixed(1)}, 
+                        Δa=${correction.expectedImpact.da.toFixed(1)}, 
+                        Δb=${correction.expectedImpact.db.toFixed(1)}
+                    `;
+                    suggestionsDiv.appendChild(div);
+                    
+                    log(`보정 제안: ${correction.name} +${correction.addAmount.toFixed(1)}%`);
+                });
+                
+                // 예측 색상 계산
+                const predictedLab = correctionEngine.predictCorrectedColor(actualLab, corrections);
+                const predictedDeltaE = correctionEngine.calculateDeltaE(targetLab, predictedLab);
+                const improvement = analysis.deltaE - predictedDeltaE;
+                
+                // 예측 색상 표시
+                displayColor('predictedColor', predictedLab, 'Predicted');
+                
+                // 예측 결과 표시
+                const predictedDiv = document.getElementById('predictedResults');
+                predictedDiv.innerHTML = `
+                    <h3>📊 보정 적용 시 예측 결과</h3>
+                    <p><strong>예측 Lab:</strong> L=${predictedLab.L.toFixed(1)}, a=${predictedLab.a.toFixed(1)}, b=${predictedLab.b.toFixed(1)}</p>
+                    <div class="delta-e ${
+                        predictedDeltaE < 1 ? 'excellent' :
+                        predictedDeltaE < 2 ? 'good' :
+                        predictedDeltaE < 5 ? 'fair' : 'poor'
+                    }">
+                        예측 Delta E: ${predictedDeltaE.toFixed(2)}
+                    </div>
+                    <p><strong>개선도:</strong> ${improvement.toFixed(2)} 감소 
+                    (${((improvement / analysis.deltaE) * 100).toFixed(0)}% 개선)</p>
+                `;
+                
+                log(`예측 결과: Delta E=${predictedDeltaE.toFixed(2)}, 개선도=${improvement.toFixed(2)}`);
+            } else {
+                document.getElementById('correctionSuggestions').innerHTML = '<p>보정 불가능</p>';
+                document.getElementById('predictedResults').innerHTML = '<p>예측 결과 없음</p>';
+                document.getElementById('predictedColor').style.backgroundColor = '#ccc';
+                document.getElementById('predictedColor').textContent = 'N/A';
+            }
+        }
+
+        // 초기 테스트 실행
+        window.runTest1();
+    </script>
+</body>
+</html>

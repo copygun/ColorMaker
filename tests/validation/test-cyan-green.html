@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청록색 계열 색상 테스트</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .target-color {
+            background: linear-gradient(135deg, #00bcd4 0%, #009688 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .ink-analysis {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .ink-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background: #fafafa;
+        }
+        .ink-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .concentration {
+            margin: 5px 0;
+            padding: 5px;
+            background: white;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .color-sample {
+            width: 30px;
+            height: 30px;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+        .result-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .excellent { background: #c8e6c9; }
+        .good { background: #dcedc8; }
+        .fair { background: #fff9c4; }
+        .poor { background: #ffccbc; }
+        .delta-e {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .recipe-item {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #2196f3;
+        }
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 청록색 계열 색상 재현 테스트</h1>
+        
+        <div class="target-color">
+            <h2>목표 색상</h2>
+            <div style="font-size: 24px;">L* = 80, a* = -50, b* = 20</div>
+            <div style="margin-top: 10px;">밝은 청록색 (Bright Cyan-Green)</div>
+        </div>
+        
+        <div class="test-section">
+            <h3>1. 사용 가능한 잉크 분석</h3>
+            <div id="ink-analysis" class="ink-analysis"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>2. 기존 잉크로 계산 (청록색 잉크 제외)</h3>
+            <div id="old-result" class="result-box"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>3. 새 잉크 포함 계산 (청록색 잉크 포함)</h3>
+            <div id="new-result" class="result-box"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>4. 비교 분석</h3>
+            <div id="comparison" class="comparison-grid"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { OptimizedMixingEngine } from './core/optimizedMixingEngine.js';
+        import { baseInks } from './core/inkDatabase.js';
+        import { ColorScience } from './core/colorScience.js';
+        
+        const targetLab = { L: 80, a: -50, b: 20 };
+        
+        // 1. 잉크 분석
+        function analyzeInks() {
+            const relevantInks = baseInks.filter(ink => {
+                // 청록/녹색 계열 잉크만 필터링
+                const has100 = ink.concentrations[100];
+                return has100 && (has100.a < -10 || ink.id === 'white');
+            });
+            
+            let html = '';
+            relevantInks.forEach(ink => {
+                html += `<div class="ink-card">`;
+                html += `<div class="ink-name">${ink.name}</div>`;
+                
+                [100, 70, 40].forEach(conc => {
+                    if (ink.concentrations[conc]) {
+                        const lab = ink.concentrations[conc];
+                        const rgb = ColorScience.labToRgb(lab.L, lab.a, lab.b);
+                        const bgColor = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                        
+                        // 목표와의 거리 계산
+                        const distance = Math.sqrt(
+                            Math.pow(lab.L - targetLab.L, 2) +
+                            Math.pow(lab.a - targetLab.a, 2) +
+                            Math.pow(lab.b - targetLab.b, 2)
+                        );
+                        
+                        html += `<div class="concentration">`;
+                        html += `<span class="color-sample" style="background: ${bgColor}"></span>`;
+                        html += `${conc}%: L:${lab.L} a:${lab.a} b:${lab.b}`;
+                        html += `<br><small>거리: ${distance.toFixed(1)}</small>`;
+                        html += `</div>`;
+                    }
+                });
+                html += `</div>`;
+            });
+            
+            document.getElementById('ink-analysis').innerHTML = html;
+        }
+        
+        // 2. 기존 잉크로 계산
+        function calculateWithOldInks() {
+            const engine = new OptimizedMixingEngine();
+            
+            // 새로 추가한 잉크 제외
+            const oldInks = baseInks.filter(ink => 
+                !['turquoise', 'teal', 'bright-green', 'lime'].includes(ink.id)
+            );
+            
+            const result = engine.findOptimalMix(targetLab, oldInks, {
+                maxInks: 4,
+                preferredConcentrations: [100, 70, 40],
+                includeWhite: true,
+                costWeight: 0.2
+            });
+            
+            const formatted = engine.formatResult(result);
+            
+            let html = `<h4>기존 잉크만 사용</h4>`;
+            html += `<div class="delta-e ${getDeltaEClass(formatted.deltaE)}">ΔE: ${formatted.deltaE}</div>`;
+            html += `<div>품질: ${formatted.quality}</div>`;
+            html += `<div style="margin-top: 15px;"><strong>레시피:</strong></div>`;
+            
+            formatted.inks.forEach(ink => {
+                html += `<div class="recipe-item">`;
+                html += `${ink.name}: ${ink.percentage}%`;
+                if (ink.isSatin) html += ' (Satin)';
+                html += `</div>`;
+            });
+            
+            html += `<div style="margin-top: 15px;">`;
+            html += `달성 색상: L:${formatted.achievedLab.L.toFixed(1)} `;
+            html += `a:${formatted.achievedLab.a.toFixed(1)} `;
+            html += `b:${formatted.achievedLab.b.toFixed(1)}`;
+            html += `</div>`;
+            
+            document.getElementById('old-result').innerHTML = html;
+            return formatted;
+        }
+        
+        // 3. 새 잉크 포함 계산
+        function calculateWithNewInks() {
+            const engine = new OptimizedMixingEngine();
+            
+            const result = engine.findOptimalMix(targetLab, baseInks, {
+                maxInks: 4,
+                preferredConcentrations: [100, 70, 40],
+                includeWhite: true,
+                costWeight: 0.2
+            });
+            
+            const formatted = engine.formatResult(result);
+            
+            let html = `<h4>새 청록색 잉크 포함</h4>`;
+            html += `<div class="delta-e ${getDeltaEClass(formatted.deltaE)}">ΔE: ${formatted.deltaE}</div>`;
+            html += `<div>품질: ${formatted.quality}</div>`;
+            html += `<div style="margin-top: 15px;"><strong>레시피:</strong></div>`;
+            
+            formatted.inks.forEach(ink => {
+                html += `<div class="recipe-item">`;
+                html += `${ink.name}: ${ink.percentage}%`;
+                if (ink.isSatin) html += ' (Satin)';
+                html += `</div>`;
+            });
+            
+            html += `<div style="margin-top: 15px;">`;
+            html += `달성 색상: L:${formatted.achievedLab.L.toFixed(1)} `;
+            html += `a:${formatted.achievedLab.a.toFixed(1)} `;
+            html += `b:${formatted.achievedLab.b.toFixed(1)}`;
+            html += `</div>`;
+            
+            document.getElementById('new-result').innerHTML = html;
+            return formatted;
+        }
+        
+        // 4. 비교
+        function compareResults(oldResult, newResult) {
+            const improvement = ((parseFloat(oldResult.deltaE) - parseFloat(newResult.deltaE)) / parseFloat(oldResult.deltaE) * 100).toFixed(1);
+            
+            let html = `
+                <div>
+                    <h4>기존 방식</h4>
+                    <div>ΔE: ${oldResult.deltaE}</div>
+                    <div>사용 잉크 수: ${oldResult.inks.length}개</div>
+                    <div>달성 a*: ${oldResult.achievedLab.a.toFixed(1)}</div>
+                </div>
+                <div>
+                    <h4>개선된 방식</h4>
+                    <div>ΔE: ${newResult.deltaE}</div>
+                    <div>사용 잉크 수: ${newResult.inks.length}개</div>
+                    <div>달성 a*: ${newResult.achievedLab.a.toFixed(1)}</div>
+                </div>
+            `;
+            
+            html += `<div style="grid-column: span 2; text-align: center; margin-top: 20px;">`;
+            html += `<h3>개선율: ${improvement}%</h3>`;
+            html += `<div>ΔE ${oldResult.deltaE} → ${newResult.deltaE}</div>`;
+            
+            if (improvement > 0) {
+                html += `<div style="color: green; margin-top: 10px;">✅ 새로운 잉크 추가로 색상 재현성이 크게 개선되었습니다!</div>`;
+            }
+            
+            html += `</div>`;
+            
+            document.getElementById('comparison').innerHTML = html;
+        }
+        
+        function getDeltaEClass(deltaE) {
+            const value = parseFloat(deltaE);
+            if (value < 1) return 'excellent';
+            if (value < 2) return 'good';
+            if (value < 5) return 'fair';
+            return 'poor';
+        }
+        
+        // 실행
+        setTimeout(() => {
+            analyzeInks();
+            const oldResult = calculateWithOldInks();
+            const newResult = calculateWithNewInks();
+            compareResults(oldResult, newResult);
+        }, 100);
+    </script>
+</body>
+</html>

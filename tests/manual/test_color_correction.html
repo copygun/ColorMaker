@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>색상 보정 기능 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .test-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .pass { color: green; font-weight: bold; }
+        .fail { color: red; font-weight: bold; }
+        .color-box {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 색상 보정 기능 테스트</h1>        <div class="test-section">
+            <h2>1. 보정 엔진 테스트</h2>
+            <button class="btn" onclick="testCorrectionEngine()">보정 엔진 테스트</button>
+            <div id="engine-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. 색차 분석 테스트</h2>
+            <p>목표 색상: L=50, a=20, b=30 (주황색)</p>
+            <p>실제 색상: L=48, a=18, b=28 (약간 어두운 주황색)</p>
+            <button class="btn" onclick="testColorAnalysis()">색차 분석</button>
+            <div id="analysis-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. 보정 가능성 테스트</h2>
+            <button class="btn" onclick="testFeasibility()">보정 가능성 평가</button>
+            <div id="feasibility-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. 특수 잉크 추천 테스트</h2>
+            <button class="btn" onclick="testSpecialInks()">특수 잉크 추천</button>
+            <div id="special-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. React 앱에서 확인</h2>
+            <button class="btn" onclick="window.open('http://localhost:3000', '_blank')">앱 열기</button>
+            <p>앱에서 다음을 테스트하세요:</p>
+            <ol>
+                <li>레시피 계산 실행</li>
+                <li>"🎯 색상 보정" 버튼 클릭</li>
+                <li>실제 인쇄 색상 입력</li>
+                <li>색차 분석 및 보정 제안 확인</li>
+            </ol>
+        </div>
+    </div>    <script type="module">
+        window.testCorrectionEngine = async function() {
+            const resultEl = document.getElementById('engine-result');
+            try {
+                const { default: CorrectionEngine } = await import('./core/correctionEngine.js');
+                const engine = new CorrectionEngine();
+                
+                resultEl.innerHTML = '<span class="pass">✓ 보정 엔진 로드 성공</span>\n';
+                resultEl.innerHTML += '엔진 설정:\n';
+                resultEl.innerHTML += `- 최대 반복: ${engine.maxIterations}\n`;
+                resultEl.innerHTML += `- 목표 Delta E: ${engine.targetDeltaE}\n`;
+                resultEl.innerHTML += `- 이력 관리: 활성화`;
+            } catch (error) {
+                resultEl.innerHTML = `<span class="fail">✗ 로드 실패: ${error.message}</span>`;
+            }
+        };
+
+        window.testColorAnalysis = async function() {
+            const resultEl = document.getElementById('analysis-result');
+            try {
+                const { default: CorrectionEngine } = await import('./core/correctionEngine.js');
+                const { inkDB } = await import('./core/inkDatabase.js');
+                
+                const engine = new CorrectionEngine();
+                const targetLab = { L: 50, a: 20, b: 30 };
+                const actualLab = { L: 48, a: 18, b: 28 };
+                const currentRecipe = [
+                    { inkId: 'magenta', ratio: 30, concentration: 100 },
+                    { inkId: 'yellow', ratio: 40, concentration: 100 }
+                ];
+                
+                const analysis = engine.analyzeCorrection(
+                    targetLab,
+                    actualLab,
+                    currentRecipe,
+                    inkDB.getAllInks()
+                );
+                
+                resultEl.innerHTML = '<span class="pass">✓ 분석 완료</span>\n\n';
+                resultEl.innerHTML += `Delta E 2000: ${analysis.deltaE.toFixed(2)}\n`;
+                resultEl.innerHTML += `색상 차이:\n`;
+                resultEl.innerHTML += `- ΔL: ${analysis.colorDifference.dL.toFixed(2)}\n`;
+                resultEl.innerHTML += `- Δa: ${analysis.colorDifference.da.toFixed(2)}\n`;
+                resultEl.innerHTML += `- Δb: ${analysis.colorDifference.db.toFixed(2)}\n\n`;
+                resultEl.innerHTML += `보정 방향:\n`;
+                analysis.correctionDirection.corrections.forEach(c => {
+                    resultEl.innerHTML += `- ${c.type}: ${c.value} (${c.amount.toFixed(2)})\n`;
+                });
+            } catch (error) {
+                resultEl.innerHTML = `<span class="fail">✗ 분석 실패: ${error.message}</span>`;
+            }
+        };        window.testFeasibility = async function() {
+            const resultEl = document.getElementById('feasibility-result');
+            try {
+                const { default: CorrectionEngine } = await import('./core/correctionEngine.js');
+                const { inkDB } = await import('./core/inkDatabase.js');
+                
+                const engine = new CorrectionEngine();
+                
+                // 테스트 케이스 1: 보정 가능한 경우
+                const test1 = engine.analyzeCorrection(
+                    { L: 50, a: 20, b: 30 },
+                    { L: 48, a: 18, b: 28 },
+                    [{ inkId: 'magenta', ratio: 30 }, { inkId: 'yellow', ratio: 40 }],
+                    inkDB.getAllInks()
+                );
+                
+                // 테스트 케이스 2: 색차가 큰 경우
+                const test2 = engine.analyzeCorrection(
+                    { L: 50, a: 20, b: 30 },
+                    { L: 30, a: -10, b: 0 },
+                    [{ inkId: 'cyan', ratio: 100 }],
+                    inkDB.getAllInks()
+                );
+                
+                resultEl.innerHTML = '<span class="pass">✓ 평가 완료</span>\n\n';
+                resultEl.innerHTML += '테스트 1 (작은 색차):\n';
+                resultEl.innerHTML += `- 보정 가능: ${test1.feasibility.isPossible ? '예' : '아니오'}\n`;
+                resultEl.innerHTML += `- 신뢰도: ${(test1.feasibility.confidence * 100).toFixed(0)}%\n`;
+                if (test1.feasibility.correctionInks) {
+                    resultEl.innerHTML += `- 추천 잉크: ${test1.feasibility.correctionInks.length}개\n`;
+                }
+                
+                resultEl.innerHTML += '\n테스트 2 (큰 색차):\n';
+                resultEl.innerHTML += `- 보정 가능: ${test2.feasibility.isPossible ? '예' : '아니오'}\n`;
+                resultEl.innerHTML += `- 이유: ${test2.feasibility.reason}\n`;
+                resultEl.innerHTML += `- 추천: ${test2.feasibility.recommendation}\n`;
+            } catch (error) {
+                resultEl.innerHTML = `<span class="fail">✗ 평가 실패: ${error.message}</span>`;
+            }
+        };        window.testSpecialInks = async function() {
+            const resultEl = document.getElementById('special-result');
+            try {
+                const { default: CorrectionEngine } = await import('./core/correctionEngine.js');
+                
+                const engine = new CorrectionEngine();
+                
+                // 다양한 색차 테스트
+                const testCases = [
+                    { dL: 10, da: 0, db: 0, desc: '명도만 높음' },
+                    { dL: -10, da: 0, db: 0, desc: '명도만 낮음' },
+                    { dL: 0, da: 8, db: 0, desc: '적색 필요' },
+                    { dL: 0, da: -8, db: 0, desc: '녹색 필요' },
+                    { dL: 0, da: 0, db: 8, desc: '황색 필요' },
+                    { dL: 0, da: 0, db: -8, desc: '청색 필요' }
+                ];
+                
+                resultEl.innerHTML = '<span class="pass">✓ 특수 잉크 추천 테스트</span>\n\n';
+                
+                testCases.forEach(test => {
+                    const suggestions = engine.suggestSpecialInks(test);
+                    resultEl.innerHTML += `${test.desc}:\n`;
+                    if (suggestions.length > 0) {
+                        suggestions.forEach(s => {
+                            resultEl.innerHTML += `  • ${s.type}: ${s.reason}\n`;
+                        });
+                    } else {
+                        resultEl.innerHTML += `  • 추천 없음\n`;
+                    }
+                    resultEl.innerHTML += '\n';
+                });
+            } catch (error) {
+                resultEl.innerHTML = `<span class="fail">✗ 테스트 실패: ${error.message}</span>`;
+            }
+        };
+    </script>
+</body>
+</html>
