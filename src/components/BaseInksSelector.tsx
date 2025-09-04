@@ -49,11 +49,65 @@ const BaseInksSelector: React.FC<BaseInksSelectorProps> = ({
     }
   };
 
+  const handleGroupSelectAll = (inks: Ink[]) => {
+    const inkIds = inks.map(ink => ink.id);
+    const newSelectedInks = [...new Set([...selectedInks, ...inkIds])];
+    setSelectedInks(newSelectedInks);
+  };
+
+  const handleGroupDeselectAll = (inks: Ink[]) => {
+    const inkIds = inks.map(ink => ink.id);
+    setSelectedInks(selectedInks.filter(id => !inkIds.includes(id)));
+  };
+
   const renderInkGroup = (title: string, inks: Ink[], specialStyle?: 'fluorescent' | 'medium') => {
     return (
       <div>
-        <div style={{ fontWeight: 600, fontSize: '0.7rem', color: '#666', marginBottom: '6px' }}>
-          {title}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          marginBottom: '6px' 
+        }}>
+          <span style={{ fontWeight: 600, fontSize: '0.7rem', color: '#666' }}>
+            {title}
+          </span>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button
+              type="button"
+              onClick={() => handleGroupSelectAll(inks)}
+              style={{
+                padding: '2px 6px',
+                fontSize: '10px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontWeight: 500
+              }}
+              title={`${title} 전체 선택`}
+            >
+              전체
+            </button>
+            <button
+              type="button"
+              onClick={() => handleGroupDeselectAll(inks)}
+              style={{
+                padding: '2px 6px',
+                fontSize: '10px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '3px',
+                cursor: 'pointer',
+                fontWeight: 500
+              }}
+              title={`${title} 전체 해제`}
+            >
+              해제
+            </button>
+          </div>
         </div>
         <div style={{ 
           display: 'flex', 

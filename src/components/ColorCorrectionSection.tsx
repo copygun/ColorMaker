@@ -24,15 +24,15 @@ const ColorCorrectionSection: React.FC<ColorCorrectionSectionProps> = ({
   inkDB
 }) => {
   const [measuredLab, setMeasuredLab] = useState<LabColor>({
-    L: targetColor.L,
-    a: targetColor.a,
-    b: targetColor.b
+    L: 0,
+    a: 0,
+    b: 0
   });
   
   const [inputValues, setInputValues] = useState({
-    L: targetColor.L.toString(),
-    a: targetColor.a.toString(),
-    b: targetColor.b.toString()
+    L: '',
+    a: '',
+    b: ''
   });
   
   const [deltaE, setDeltaE] = useState<number>(0);
