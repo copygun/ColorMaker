@@ -43,7 +43,7 @@ function App() {
   } = useColorCalculation();
 
   // 상태 관리
-  const [targetColor, setTargetColor] = useState<LabColor>({ L: 50, a: 0, b: 0 });
+  const [targetColor, setTargetColor] = useState<LabColor>({ L: 0, a: 0, b: 0 });
   const [selectedInks, setSelectedInks] = useState<string[]>(['cyan', 'magenta', 'yellow', 'black']);
   const [currentRecipe, setCurrentRecipe] = useState<Recipe | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -445,7 +445,7 @@ function App() {
             <RecipeHistory 
               currentRecipe={currentRecipe}
               onSelectRecipe={(recipe) => {
-                setTargetColor(recipe.target || recipe.targetColor?.lab || { L: 50, a: 0, b: 0 });
+                setTargetColor(recipe.target || recipe.targetColor?.lab || { L: 0, a: 0, b: 0 });
                 setCurrentRecipe(recipe);
                 setShowHistory(false);
               }}

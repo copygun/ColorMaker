@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>색상 보정 기능 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            color: #333;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .feature {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f7f9fc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .steps {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: #667eea;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .example {
+            background: #e6f2ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #3498db;
+        }
+        .code {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            margin: 0 5px;
+        }
+        .success {
+            background: #27ae60;
+        }
+        .warning {
+            background: #f39c12;
+        }
+        .info {
+            background: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 색상 보정 기능 구현 완료</h1>
+        
+        <div class="feature">
+            <h2>✨ 새로운 기능: 인쇄 결과 색상 보정</h2>
+            <p>계산된 레시피로 실제 인쇄한 결과가 목표 색상과 차이가 날 때, 보정 레시피를 자동으로 계산해주는 기능입니다.</p>
+        </div>
+
+        <div class="steps">
+            <h3>📋 사용 방법</h3>
+            <div class="step" data-step="1">
+                <strong>레시피 계산</strong><br>
+                목표 색상을 입력하고 레시피를 계산합니다.
+            </div>
+            <div class="step" data-step="2">
+                <strong>실제 인쇄</strong><br>
+                계산된 레시피대로 잉크를 혼합하여 인쇄합니다.
+            </div>
+            <div class="step" data-step="3">
+                <strong>색상 측정</strong><br>
+                인쇄된 결과물의 Lab 값을 측정기로 측정합니다.
+            </div>
+            <div class="step" data-step="4">
+                <strong>보정 분석</strong><br>
+                "🔧 색상 보정 분석" 버튼을 클릭하고 측정된 Lab 값을 입력합니다.
+            </div>
+            <div class="step" data-step="5">
+                <strong>보정 레시피 적용</strong><br>
+                시스템이 제안한 보정 레시피를 적용하여 색상을 미세 조정합니다.
+            </div>
+        </div>
+
+        <div class="example">
+            <h3>💡 예시 시나리오</h3>
+            <p><strong>목표 색상:</strong> L*: 50, a*: 20, b*: 30 (주황색)</p>
+            <p><strong>실제 인쇄 결과:</strong> L*: 48, a*: 18, b*: 28</p>
+            <p><strong>분석 결과:</strong></p>
+            <ul>
+                <li>Delta E: 3.16 <span class="badge warning">보정 필요</span></li>
+                <li>명도: -2 (약간 어두움)</li>
+                <li>적색: -2 (적색 부족)</li>
+                <li>황색: -2 (황색 부족)</li>
+            </ul>
+            <p><strong>보정 추천:</strong></p>
+            <ul>
+                <li>Transparent White 3% 추가 (명도 상승)</li>
+                <li>Warm Red 2% 추가 (적색 보강)</li>
+                <li>Yellow 012 1.5% 추가 (황색 보강)</li>
+            </ul>
+            <p><strong>예상 결과:</strong> Delta E < 1.0 <span class="badge success">우수</span></p>
+        </div>
+
+        <div class="feature">
+            <h3>🔬 기술적 특징</h3>
+            <ul>
+                <li><strong>CorrectionEngine:</strong> 색차 분석 및 보정 방향 결정</li>
+                <li><strong>InkFilmThicknessModel:</strong> 도막 두께에 따른 색상 변화 시뮬레이션</li>
+                <li><strong>특수 잉크 추천:</strong> Pantone 특수 잉크 사용 제안</li>
+                <li><strong>TAC 제한:</strong> 총 잉크량 400% 이내 관리</li>
+                <li><strong>보정 이력:</strong> 모든 보정 작업 기록 및 성공률 추적</li>
+            </ul>
+        </div>
+
+        <div class="code">
+            <h4>// 보정 분석 알고리즘</h4>
+            <pre>
+1. Delta E 2000 계산
+2. 색차 방향 분석 (ΔL, Δa, Δb)
+3. 보정 가능성 평가
+4. 적합한 보정 잉크 선택
+5. 보정량 계산 (선형 근사)
+6. 예상 결과 시뮬레이션
+7. 특수 잉크 추천 (필요시)
+            </pre>
+        </div>
+
+        <div class="feature" style="background: #e8f5e9; border-left-color: #27ae60;">
+            <h3>✅ 구현 완료 사항</h3>
+            <ul>
+                <li>ColorCorrectionModal 컴포넌트 구현</li>
+                <li>CorrectionEngine 클래스 (이미 존재)</li>
+                <li>InkFilmThicknessModel 클래스 추가</li>
+                <li>보정 이력 저장 및 관리</li>
+                <li>특수 잉크 추천 시스템</li>
+                <li>보정 레시피 자동 계산</li>
+                <li>예상 결과 시뮬레이션</li>
+            </ul>
+        </div>
+
+        <div class="feature" style="background: #fff3cd; border-left-color: #f39c12;">
+            <h3>📊 Delta E 품질 기준</h3>
+            <ul>
+                <li><strong>&lt; 1.0:</strong> <span class="badge success">우수</span> - 육안으로 구분 불가</li>
+                <li><strong>1.0 - 2.0:</strong> <span class="badge info">양호</span> - 숙련자만 구분 가능</li>
+                <li><strong>2.0 - 3.0:</strong> <span class="badge">보통</span> - 일반인도 주의깊게 보면 구분</li>
+                <li><strong>3.0 - 5.0:</strong> <span class="badge warning">보정필요</span> - 명확한 차이</li>
+                <li><strong>&gt; 5.0:</strong> <span class="badge" style="background: #e74c3c;">재조색필요</span> - 큰 차이</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+            <p style="color: #666;">
+                🚀 원라벨 컬러메이커 Professional v1.2<br>
+                색상 보정 기능이 추가되었습니다.<br>
+                <a href="http://localhost:3009" style="color: #667eea; text-decoration: none; font-weight: bold;">
+                    앱으로 돌아가기 →
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

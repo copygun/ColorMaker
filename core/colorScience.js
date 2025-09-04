@@ -4,7 +4,7 @@
  * v3.0에서 추출 및 모듈화
  */
 
-// Delta E 2000 계산 (가중치 지원)
+// ΔE*00 (CIEDE2000) 계산 (가중치 지원)
 export function calculateDeltaE00(L1, a1, b1, L2, a2, b2, weights = { kL: 1, kC: 1, kH: 1 }) {
     const { kL, kC, kH } = weights;
     
@@ -74,7 +74,7 @@ export function calculateDeltaE00(L1, a1, b1, L2, a2, b2, weights = { kL: 1, kC:
     return dE00;
 }
 
-// Delta E 1994 계산
+// ΔE*94 (CIE 1994) 계산
 export function calculateDeltaE94(L1, a1, b1, L2, a2, b2) {
     const kL = 1, kC = 1, kH = 1;
     const K1 = 0.045, K2 = 0.015;
@@ -99,7 +99,7 @@ export function calculateDeltaE94(L1, a1, b1, L2, a2, b2) {
     );
 }
 
-// Delta E 1976 (CIE76) 계산
+// ΔE*76 (CIE 1976) 계산
 export function calculateDeltaE76(L1, a1, b1, L2, a2, b2) {
     const deltaL = L2 - L1;
     const deltaA = a2 - a1;
@@ -107,7 +107,7 @@ export function calculateDeltaE76(L1, a1, b1, L2, a2, b2) {
     return Math.sqrt(deltaL * deltaL + deltaA * deltaA + deltaB * deltaB);
 }
 
-// Delta E CMC 계산
+// ΔE*CMC 계산
 export function calculateDeltaECMC(L1, a1, b1, L2, a2, b2, l = 2, c = 1) {
     const C1 = Math.sqrt(a1 * a1 + b1 * b1);
     const C2 = Math.sqrt(a2 * a2 + b2 * b2);
@@ -146,9 +146,9 @@ export function calculateDeltaECMC(L1, a1, b1, L2, a2, b2, l = 2, c = 1) {
     );
 }
 
-// Lab to RGB 변환
+// CIELAB to RGB 변환
 export function labToRgb(L, a, b) {
-    // Lab to XYZ
+    // CIELAB to XYZ
     let y = (L + 16) / 116;
     let x = a / 500 + y;
     let z = y - b / 200;
@@ -182,7 +182,7 @@ export function labToRgb(L, a, b) {
     };
 }
 
-// Lab to XYZ 변환 (새로 추가)
+// CIELAB to XYZ 변환 (새로 추가)
 export function labToXyz(L, a, b, illuminant = 'D65') {
     // Illuminant reference values
     const illuminants = {
@@ -210,7 +210,7 @@ export function labToXyz(L, a, b, illuminant = 'D65') {
     return { X, Y, Z };
 }
 
-// XYZ to Lab 변환 (새로 추가)
+// XYZ to CIELAB 변환 (새로 추가)
 export function xyzToLab(X, Y, Z, illuminant = 'D65') {
     const illuminants = {
         'D50': { X: 96.422, Y: 100.000, Z: 82.521 },
@@ -237,7 +237,7 @@ export function xyzToLab(X, Y, Z, illuminant = 'D65') {
     return { L, a, b };
 }
 
-// RGB to Lab 변환
+// RGB to CIELAB 변환
 export function rgbToLab(r, g, b) {
     // Normalize RGB values
     r = r / 255;
@@ -254,13 +254,13 @@ export function rgbToLab(r, g, b) {
     const Y = r * 0.2126729 + g * 0.7151522 + b * 0.0721750;
     const Z = r * 0.0193339 + g * 0.1191920 + b * 0.9503041;
     
-    // XYZ to Lab
+    // XYZ to CIELAB
     return xyzToLab(X, Y, Z);
 }
 
 // 색상 유효성 검증
 export function isValidLabColor(L, a, b) {
-    // Lab 범위 검증
+    // CIELAB 범위 검증
     if (L < 0 || L > 100) return false;
     if (Math.abs(a) > 128 || Math.abs(b) > 128) return false;
     

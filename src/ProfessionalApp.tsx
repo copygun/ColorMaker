@@ -8,9 +8,22 @@ import { useColorCalculation } from './hooks/useColorCalculation';
 import RecipeHistory from './components/RecipeHistory';
 import ColorInput from './components/ColorInput';
 import MeasurementInfo from './components/MeasurementInfo';
+import InfoModal from './components/InfoModal';
+import BaseInksSelector from './components/BaseInksSelector';
+import PrintSettings from './components/PrintSettings';
+import RecipeResults from './components/RecipeResults';
+import VendorProfileManager from './components/VendorProfileManager';
+import ColorDatabase from './components/ColorDatabase';
+import RecipeManagement from './components/RecipeManagement';
+import Settings from './components/Settings';
+import Navigation from './components/Navigation';
+import ColorCorrectionModal from './components/ColorCorrectionModal';
+import CorrectionHistory from './components/CorrectionHistory';
 import type { LabColor, Recipe } from './types';
+import { RecipeStatus } from './types';
 import CorrectionEngine from '../core/correctionEngine.js';
 import manufacturerDB from '../core/manufacturerInkDatabase.js';
+import { inkDB } from '../core/inkDatabase.js';
 import './styles/professional.css';
 
 type PageView = 'calculator' | 'database' | 'recipes' | 'profiles' | 'settings';
@@ -18,6 +31,7 @@ type PageView = 'calculator' | 'database' | 'recipes' | 'profiles' | 'settings';
 function ProfessionalApp() {
   const {
     calculateRecipe,
+    calculateOptimizedRecipe,
     labToRgb,
     getInkDatabase,
     setDeltaEMethod,
@@ -28,23 +42,120 @@ function ProfessionalApp() {
   const [currentPage, setCurrentPage] = useState<PageView>('calculator');
   
   // Calculator page state
-  const [targetColor, setTargetColor] = useState<LabColor>({ L: 50, a: 0, b: 0 });
-  const [selectedInks, setSelectedInks] = useState<string[]>(['cyan', 'magenta', 'yellow', 'black']);
+  const [targetColor, setTargetColor] = useState<LabColor>({ L: 0, a: 0, b: 0 });
+  // Process Inks (CMYKW)만 기본 선택
+  const [selectedInks, setSelectedInks] = useState<string[]>([
+    'cyan', 'magenta', 'yellow', 'black', 'white'  // Process Inks only
+  ]);
   const [currentRecipe, setCurrentRecipe] = useState<Recipe | null>(null);
+  const [optimizedRecipes, setOptimizedRecipes] = useState<Recipe[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [activeTab, setActiveTab] = useState<'lab' | 'rgb' | 'hex' | 'cmyk'>('lab');
+  const [maxOptimizedRecipes, setMaxOptimizedRecipes] = useState(5);
   const [printSettings, setPrintSettings] = useState({
     method: 'offset',
     substrate: 'white_coated',
+    substrateLab: { L: 95, a: 0, b: -2 },  // 원단 CIELAB 값 (일반적인 백색 코팅지)
     dotGain: 15,
     tacLimit: 320
   });
   
+  // Vendor profile management state
+  interface VendorProfile {
+    id: string;
+    name: string;
+    createdAt: string;
+    preparedInks: string[];  // 준비된 잉크 ID 목록
+    customValues: any;  // 커스텀 Lab 값
+    spotInkRecipes?: {  // Spot Ink 레시피 (계산된 값)
+      [spotInkId: string]: {
+        recipe: Array<{ inkId: string; percentage: number }>;
+        calculatedLab?: { L: number; a: number; b: number };
+        measuredLab?: { L: number; a: number; b: number };  // 실제 측정값
+      };
+    };
+    isComplete?: boolean;  // 모든 spot ink Lab 값이 입력되었는지
+  }
+  
+  const [vendorProfiles, setVendorProfiles] = useState<VendorProfile[]>([]);
+  const [currentVendorProfile, setCurrentVendorProfile] = useState<string>('');
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<VendorProfile | null>(null);
+  const [selectedInksForProfile, setSelectedInksForProfile] = useState<string[]>([]);
+  
+  // Database editing state (now vendor-specific)
+  const [customInkValues, setCustomInkValues] = useState<any>({});
+  
+  // Load vendor profiles from localStorage
+  useEffect(() => {
+    // Load vendor profiles list
+    const savedProfiles = localStorage.getItem('vendorProfiles');
+    if (savedProfiles) {
+      try {
+        const parsedProfiles = JSON.parse(savedProfiles);
+        setVendorProfiles(parsedProfiles);
+      } catch (e) {
+        console.error('Failed to load vendor profiles');
+      }
+    }
+    
+    // Load current vendor profile
+    const savedCurrentProfile = localStorage.getItem('currentVendorProfile');
+    if (savedCurrentProfile) {
+      setCurrentVendorProfile(savedCurrentProfile);
+    }
+  }, []);
+  
+  // Update when vendor profile changes
+  useEffect(() => {
+    if (currentVendorProfile) {
+      const profile = vendorProfiles.find(p => p.id === currentVendorProfile);
+      if (profile) {
+        setCustomInkValues(profile.customValues || {});
+        // Apply profile's prepared inks to selectedInks if in calculator mode
+        if (currentPage === 'calculator' && profile.preparedInks?.length > 0) {
+          setSelectedInks(profile.preparedInks);
+        }
+      }
+    } else {
+      // Load default custom values
+      const saved = localStorage.getItem('customInkValues_default');
+      if (saved) {
+        try {
+          setCustomInkValues(JSON.parse(saved));
+        } catch (e) {
+          setCustomInkValues({});
+        }
+      } else {
+        setCustomInkValues({});
+      }
+      // vendor profile이 없을 때는 Process Inks만 기본 선택
+      if (currentPage === 'calculator') {
+        setSelectedInks(['cyan', 'magenta', 'yellow', 'black', 'white']);
+      }
+    }
+    localStorage.setItem('currentVendorProfile', currentVendorProfile);
+  }, [currentVendorProfile, vendorProfiles, currentPage]);
+  
   // Recipe history
   const [recipeHistory, setRecipeHistory] = useState<Recipe[]>([]);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  
+  // Color correction modal state
+  const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+  const [correctionHistory, setCorrectionHistory] = useState<any[]>([]);
+  
+  // Active recipe management
+  const [activeRecipeId, setActiveRecipeId] = useState<string | null>(null);
+  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
+  
+  // Info modal state for replacing alert()
+  const [infoModal, setInfoModal] = useState<{ isOpen: boolean; title?: string; content: string | string[] }>({
+    isOpen: false,
+    content: ''
+  });
 
-  // Load saved recipes on mount
+  // Load saved recipes and correction history on mount
   useEffect(() => {
     const savedHistory = localStorage.getItem('recipeHistory');
     if (savedHistory) {
@@ -52,6 +163,15 @@ function ProfessionalApp() {
         setRecipeHistory(JSON.parse(savedHistory));
       } catch (e) {
         console.error('Failed to load history');
+      }
+    }
+    
+    const savedCorrectionHistory = localStorage.getItem('correctionHistory');
+    if (savedCorrectionHistory) {
+      try {
+        setCorrectionHistory(JSON.parse(savedCorrectionHistory));
+      } catch (e) {
+        console.error('Failed to load correction history');
       }
     }
   }, []);
@@ -137,26 +257,334 @@ function ProfessionalApp() {
     };
   };
 
+  // Vendor profile management functions
+  const saveVendorProfile = async (name: string, preparedInks: string[], customValues: any) => {
+    // Calculate spot ink recipes based on available process inks
+    const spotInkRecipes: VendorProfile['spotInkRecipes'] = {};
+    
+    // Get available process inks and medium from preparedInks
+    const processInks = preparedInks.filter(id => 
+      ['cyan', 'magenta', 'yellow', 'black', 'white'].includes(id)
+    );
+    
+    // Calculate recipes for each spot ink
+    const spotInks = inkDB.getSpotInks();
+    for (const spotInk of spotInks) {
+      if (spotInk.concentrations?.[100]) {
+        try {
+          // Calculate recipe using available process inks
+          const recipe = await calculateRecipe(
+            spotInk.concentrations[100],
+            processInks,
+            'offset',
+            { printMethod: 'offset', substrateType: 'white_coated' }
+          );
+          
+          if (recipe && recipe.inks) {
+            spotInkRecipes[spotInk.id] = {
+              recipe: recipe.inks.map((ink: any) => ({
+                inkId: ink.id,
+                percentage: parseFloat(ink.percentage)
+              })),
+              calculatedLab: recipe.mixed,
+              measuredLab: undefined  // To be filled by user
+            };
+          }
+        } catch (error) {
+          console.error(`Failed to calculate recipe for ${spotInk.name}:`, error);
+        }
+      }
+    }
+    
+    const newProfile: VendorProfile = {
+      id: Date.now().toString(),
+      name,
+      createdAt: new Date().toISOString(),
+      preparedInks,
+      customValues,
+      spotInkRecipes,
+      isComplete: false  // Not complete until spot ink Lab values are measured
+    };
+    const updatedProfiles = [...vendorProfiles, newProfile];
+    setVendorProfiles(updatedProfiles);
+    localStorage.setItem('vendorProfiles', JSON.stringify(updatedProfiles));
+    return newProfile;
+  };
+  
+  const updateVendorProfile = (profileId: string, updates: Partial<VendorProfile>) => {
+    const updatedProfiles = vendorProfiles.map(p => 
+      p.id === profileId ? { ...p, ...updates } : p
+    );
+    setVendorProfiles(updatedProfiles);
+    localStorage.setItem('vendorProfiles', JSON.stringify(updatedProfiles));
+  };
+  
+  const deleteVendorProfile = (profileId: string) => {
+    const updatedProfiles = vendorProfiles.filter(p => p.id !== profileId);
+    setVendorProfiles(updatedProfiles);
+    localStorage.setItem('vendorProfiles', JSON.stringify(updatedProfiles));
+    
+    // Clear current profile if deleted
+    if (currentVendorProfile === profileId) {
+      setCurrentVendorProfile('');
+    }
+  };
+  
+  const selectVendorProfile = (profileId: string) => {
+    setCurrentVendorProfile(profileId);
+  };
+
+  // Generate unique ID for recipes
+  const generateRecipeId = () => {
+    return `recipe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  // Select recipe for work
+  const selectRecipeForWork = useCallback((recipe: Recipe) => {
+    if (!recipe.id) {
+      recipe.id = generateRecipeId();
+    }
+    
+    // Update recipe status
+    const updatedRecipe = {
+      ...recipe,
+      status: RecipeStatus.SELECTED,
+      startedAt: new Date().toISOString()
+    };
+    
+    setActiveRecipeId(recipe.id);
+    setCurrentRecipe(updatedRecipe);
+    
+    // Update in allRecipes
+    setAllRecipes(prev => {
+      const exists = prev.find(r => r.id === recipe.id);
+      if (exists) {
+        return prev.map(r => r.id === recipe.id ? updatedRecipe : r);
+      } else {
+        return [...prev, updatedRecipe];
+      }
+    });
+    
+    setInfoModal({
+      isOpen: true,
+      title: '작업 시작',
+      content: '레시피가 선택되었습니다. 조색 작업을 시작하세요.'
+    });
+  }, []);
+
+  // Update recipe status
+  const updateRecipeStatus = useCallback((recipeId: string, status: RecipeStatus) => {
+    const updateTimestamps = (recipe: Recipe) => {
+      const updated = { ...recipe, status };
+      
+      if (status === RecipeStatus.IN_PROGRESS && !updated.startedAt) {
+        updated.startedAt = new Date().toISOString();
+      }
+      if (status === RecipeStatus.COMPLETED || status === RecipeStatus.CORRECTED) {
+        updated.completedAt = new Date().toISOString();
+      }
+      
+      return updated;
+    };
+    
+    // Update currentRecipe if it matches
+    if (currentRecipe?.id === recipeId) {
+      setCurrentRecipe(prev => prev ? updateTimestamps(prev) : prev);
+    }
+    
+    // Update in allRecipes
+    setAllRecipes(prev => prev.map(r => r.id === recipeId ? updateTimestamps(r) : r));
+    
+    // Show status message
+    const statusMessages: Record<RecipeStatus, string> = {
+      [RecipeStatus.CALCULATED]: '레시피가 계산되었습니다.',
+      [RecipeStatus.SELECTED]: '레시피가 선택되었습니다.',
+      [RecipeStatus.IN_PROGRESS]: '조색 작업을 시작합니다.',
+      [RecipeStatus.MEASURING]: '색상을 측정하세요.',
+      [RecipeStatus.COMPLETED]: '작업이 완료되었습니다.',
+      [RecipeStatus.NEEDS_CORRECTION]: '색상 보정이 필요합니다.',
+      [RecipeStatus.CORRECTING]: '색상 보정 중입니다.',
+      [RecipeStatus.CORRECTED]: '색상 보정이 완료되었습니다.'
+    };
+    
+    setInfoModal({
+      isOpen: true,
+      title: '상태 변경',
+      content: statusMessages[status]
+    });
+  }, [currentRecipe]);
+
+  // Handle correction recipe application
+  const handleApplyCorrection = useCallback((correctionRecipe: any) => {
+    if (!currentRecipe || !correctionRecipe) return;
+    
+    // Apply corrections to current recipe
+    const updatedRecipe = { ...currentRecipe };
+    
+    // Add correction inks to the recipe
+    correctionRecipe.corrections.forEach((correction: any) => {
+      const existingInkIndex = updatedRecipe.recipe.findIndex(
+        (ink: any) => ink.inkId === correction.inkId
+      );
+      
+      if (existingInkIndex >= 0) {
+        // Update existing ink amount
+        updatedRecipe.recipe[existingInkIndex].percentage += correction.addAmount;
+      } else {
+        // Add new ink
+        updatedRecipe.recipe.push({
+          inkId: correction.inkId,
+          name: correction.name,
+          percentage: correction.addAmount,
+          concentration: 100
+        });
+      }
+    });
+    
+    // Normalize percentages to 100%
+    const totalPercentage = updatedRecipe.recipe.reduce(
+      (sum: number, ink: any) => sum + ink.percentage,
+      0
+    );
+    
+    if (totalPercentage > 100) {
+      updatedRecipe.recipe.forEach((ink: any) => {
+        ink.percentage = (ink.percentage / totalPercentage) * 100;
+      });
+    }
+    
+    // Update mixed color prediction
+    updatedRecipe.mixedColor = correctionRecipe.predictedColor;
+    updatedRecipe.originalDeltaE = currentRecipe.deltaE; // 보정 전 Delta E 저장
+    updatedRecipe.deltaE = correctionRecipe.predictedDeltaE;
+    updatedRecipe.isCorrection = true;
+    updatedRecipe.correctionDate = new Date().toISOString();
+    updatedRecipe.status = RecipeStatus.CORRECTED;
+    
+    setCurrentRecipe(updatedRecipe);
+    
+    // Update in allRecipes
+    if (updatedRecipe.id) {
+      setAllRecipes(prev => prev.map(r => r.id === updatedRecipe.id ? updatedRecipe : r));
+    }
+    
+    // Save to correction history
+    const correctionEntry = {
+      timestamp: new Date().toISOString(),
+      targetColor,
+      originalRecipe: currentRecipe,
+      correctedRecipe: updatedRecipe,
+      corrections: correctionRecipe.corrections,
+      predictedDeltaE: correctionRecipe.predictedDeltaE
+    };
+    
+    const newCorrectionHistory = [correctionEntry, ...correctionHistory.slice(0, 49)];
+    setCorrectionHistory(newCorrectionHistory);
+    localStorage.setItem('correctionHistory', JSON.stringify(newCorrectionHistory));
+    
+    // Close modal and show success message
+    setShowCorrectionModal(false);
+    setInfoModal({
+      isOpen: true,
+      title: '보정 완료',
+      content: '보정 레시피가 적용되었습니다. 예상 Delta E: ' + correctionRecipe.predictedDeltaE.toFixed(2)
+    });
+  }, [currentRecipe, targetColor, correctionHistory]);
+
   // Calculate recipe
   const handleCalculate = useCallback(async () => {
+    console.log('Starting calculation...', { targetColor, selectedInks });
     setIsCalculating(true);
+    
+    // Clear previous recipes
+    setAllRecipes([]);
+    setActiveRecipeId(null);
+    
     try {
+      // 선택된 잉크로 계산
+      console.log('Calculating selected inks recipe...');
       const recipe = await calculateRecipe(targetColor, selectedInks, 'offset', {
         printMethod: printSettings.method,
         substrateType: printSettings.substrate
       });
-      setCurrentRecipe(recipe);
+      console.log('Selected inks recipe:', recipe);
+      
+      // Add ID and initial status to recipe
+      const recipeWithId = {
+        ...recipe,
+        id: generateRecipeId(),
+        name: '선택된 잉크 레시피',
+        type: 'selected' as const,
+        status: RecipeStatus.CALCULATED,
+        createdAt: new Date().toISOString()
+      };
+      
+      setCurrentRecipe(recipeWithId);
+      setAllRecipes(prev => [...prev, recipeWithId]);
+      
+      // 최적화된 레시피 계산 (모든 잉크 사용)
+      if (calculateOptimizedRecipe) {
+        try {
+          console.log('Calculating optimized recipes...');
+          const optimized = await calculateOptimizedRecipe(targetColor, {
+            maxInks: 4,
+            includeWhite: true,
+            use100: true,
+            use70: true,
+            use40: true,
+            maxResults: maxOptimizedRecipes,
+            substrateLab: printSettings.substrateLab  // 원단 Lab 값 전달
+          });
+          console.log('Optimized recipes:', optimized);
+          // 배열인 경우 그대로 저장, 단일 객체인 경우 배열로 변환
+          let optimizedWithIds: Recipe[] = [];
+          
+          if (Array.isArray(optimized)) {
+            optimizedWithIds = optimized.map((opt, index) => ({
+              ...opt,
+              id: generateRecipeId(),
+              name: `최적화 레시피 #${index + 1}`,
+              type: 'optimized' as const,
+              status: RecipeStatus.CALCULATED,
+              createdAt: new Date().toISOString()
+            }));
+          } else if (optimized) {
+            optimizedWithIds = [{
+              ...optimized,
+              id: generateRecipeId(),
+              name: '최적화 레시피 #1',
+              type: 'optimized' as const,
+              status: RecipeStatus.CALCULATED,
+              createdAt: new Date().toISOString()
+            }];
+          }
+          
+          setOptimizedRecipes(optimizedWithIds);
+          setAllRecipes(prev => [...prev, ...optimizedWithIds]);
+        } catch (error) {
+          console.error('Optimized recipe calculation error:', error);
+          setOptimizedRecipes([]);
+        }
+      } else {
+        console.warn('calculateOptimizedRecipe is not available');
+        setOptimizedRecipes([]);
+      }
       
       // Add to history
       const newHistory = [recipe, ...recipeHistory.slice(0, 49)];
       setRecipeHistory(newHistory);
       localStorage.setItem('recipeHistory', JSON.stringify(newHistory));
     } catch (error) {
-      alert('계산 중 오류가 발생했습니다.');
+      console.error('Recipe calculation error:', error);
+      setInfoModal({
+        isOpen: true,
+        title: '오류',
+        content: `계산 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
+      });
     } finally {
       setIsCalculating(false);
     }
-  }, [targetColor, selectedInks, calculateRecipe, printSettings, recipeHistory]);
+  }, [targetColor, selectedInks, calculateRecipe, calculateOptimizedRecipe, printSettings, recipeHistory]);
 
   // Convert Lab to RGB
   const rgb = labToRgb(targetColor.L, targetColor.a, targetColor.b);
@@ -202,6 +630,54 @@ function ProfessionalApp() {
 
   const renderCalculator = () => (
     <>
+      {/* Loading Overlay */}
+      {isCalculating && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'white',
+            padding: '32px 48px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '24px',
+            minWidth: '280px'
+          }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              border: '5px solid #e0e0e0',
+              borderTop: '5px solid #4a90e2',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '8px', color: '#2c3e50' }}>
+                레시피 계산 중...
+              </h3>
+              <p style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
+                최적의 잉크 조합을 찾고 있습니다
+              </p>
+              <p style={{ fontSize: '12px', color: '#999' }}>
+                잠시만 기다려 주세요
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Measurement Info - D50/2° 측정 기준 표시 */}
       <div className="pro-card" style={{ marginBottom: '20px' }}>
         <div className="pro-card-body">
@@ -209,120 +685,41 @@ function ProfessionalApp() {
         </div>
       </div>
 
-      {/* Color Display Section */}
-      <div className="pro-card">
-        <div className="pro-card-header">
-          <h2 className="pro-card-title">
-            <span>색상 정보</span>
-            <span className="status-indicator status-success">활성</span>
-          </h2>
-        </div>
-        <div className="pro-card-body">
-          <div className="color-display-section">
-            {/* Color Swatch */}
-            <div className="color-swatch-container">
-              <div 
-                className="color-swatch" 
-                style={{ 
-                  backgroundColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` 
-                }}
-              >
-                <div className="color-swatch-label">
-                  목표 색상
-                </div>
-              </div>
-              <div className="value-box" style={{ marginTop: '16px' }}>
-                <div className="value-label">Light Reflectance Value</div>
-                <div className="value-content">{lrv}<span className="value-unit">%</span></div>
-              </div>
-            </div>
-
-            {/* Color Values */}
-            <div className="color-values-grid">
-              <div className="value-box">
-                <div className="value-label">CIE L*a*b* Values</div>
-                <div className="value-content">
-                  L* {targetColor.L.toFixed(1)} 
-                  <span style={{ margin: '0 8px' }}>a* {targetColor.a.toFixed(1)}</span>
-                  b* {targetColor.b.toFixed(1)}
-                </div>
-              </div>
-
-              <div className="value-box">
-                <div className="value-label">RGB Values</div>
-                <div className="value-content">
-                  R {rgb.r} G {rgb.g} B {rgb.b}
-                </div>
-              </div>
-
-              <div className="value-box">
-                <div className="value-label">HEX Code</div>
-                <div className="value-content">{hex}</div>
-              </div>
-              
-              <div className="value-box">
-                <div className="value-label">CMYK Values</div>
-                <div className="value-content">
-                  C {cmyk.c} M {cmyk.m} Y {cmyk.y} K {cmyk.k}
-                </div>
-              </div>
-
-              <div className="value-box">
-                <div className="value-label">Delta E 2000</div>
-                <div className="value-content">
-                  {currentRecipe ? currentRecipe.deltaE.toFixed(2) : '—'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Color Input Section */}
       <div className="pro-card">
-        <div className="pro-card-header">
-          <h2 className="pro-card-title">색상 입력</h2>
+        <div className="pro-card-header" style={{ backgroundColor: '#1a1a2e', padding: '12px 20px' }}>
+          <h2 className="pro-card-title" style={{ color: 'white', fontSize: '1rem', fontWeight: 600 }}>목표 색상 입력</h2>
         </div>
         <div className="pro-card-body">
-          <ColorInput
-            value={targetColor}
-            onChange={setTargetColor}
-            onValidate={(color) => {
-              const rgb = labToRgb(color.L, color.a, color.b);
-              return rgb.r >= 0 && rgb.r <= 255 && 
-                     rgb.g >= 0 && rgb.g <= 255 && 
-                     rgb.b >= 0 && rgb.b <= 255;
-            }}
-            labToRgb={labToRgb}
-          />
-          
-          {/* Alternative Tab Navigation for manual input */}
-          <details style={{ marginTop: '24px' }}>
-            <summary style={{ cursor: 'pointer', fontWeight: 600, marginBottom: '16px' }}>
-              수동 입력 (고급)
-            </summary>
-            <div className="tab-navigation" style={{ marginBottom: '24px' }}>
+          {/* Color Conversion Values - 색상 변환 값 */}
+          <div>
+            {/* Horizontal Tab Navigation */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '2px solid #dee2e6', paddingBottom: '0' }}>
               <button 
                 className={`tab-button ${activeTab === 'lab' ? 'active' : ''}`}
                 onClick={() => setActiveTab('lab')}
+                style={{ flex: 1 }}
               >
-                L*a*b*
+                Lab
               </button>
               <button 
                 className={`tab-button ${activeTab === 'rgb' ? 'active' : ''}`}
                 onClick={() => setActiveTab('rgb')}
+                style={{ flex: 1 }}
               >
                 RGB
               </button>
               <button 
                 className={`tab-button ${activeTab === 'hex' ? 'active' : ''}`}
                 onClick={() => setActiveTab('hex')}
+                style={{ flex: 1 }}
               >
                 HEX
               </button>
               <button 
                 className={`tab-button ${activeTab === 'cmyk' ? 'active' : ''}`}
                 onClick={() => setActiveTab('cmyk')}
+                style={{ flex: 1 }}
               >
                 CMYK
               </button>
@@ -522,87 +919,82 @@ function ProfessionalApp() {
               </>
             )}
           </div>
-          </details>
+          </div>
+          
+          {/* CIELAB 색상 값 입력 - ColorInput 컴포넌트 사용 */}
+          <div style={{ marginTop: '32px' }}>
+            <ColorInput
+              value={targetColor}
+              onChange={setTargetColor}
+              onValidate={(color) => {
+                const rgb = labToRgb(color.L, color.a, color.b);
+                return rgb.r >= 0 && rgb.r <= 255 && 
+                       rgb.g >= 0 && rgb.g <= 255 && 
+                       rgb.b >= 0 && rgb.b <= 255;
+              }}
+              labToRgb={labToRgb}
+            />
+          </div>
         </div>
       </div>
 
       {/* Ink Selection & Print Settings */}
       <div className="pro-card">
-        <div className="pro-card-header">
-          <h2 className="pro-card-title">잉크 선택 및 인쇄 설정</h2>
+        <div className="pro-card-header" style={{ backgroundColor: '#1a1a2e', padding: '12px 20px' }}>
+          <h2 className="pro-card-title" style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '16px', color: 'white', fontSize: '1rem', fontWeight: 600 }}>
+            <span style={{ flexShrink: 0 }}>잉크 선택 및 인쇄 설정</span>
+            <select
+              className="pro-select"
+              style={{ 
+                minWidth: '150px', 
+                fontSize: '0.875rem',
+                fontWeight: 'normal',
+                fontFamily: 'inherit'
+              }}
+              value={currentVendorProfile}
+              onChange={(e) => selectVendorProfile(e.target.value)}
+            >
+              <option value="">프로파일 선택</option>
+              {vendorProfiles.map(profile => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.name} ({profile.preparedInks.length}개 잉크)
+                </option>
+              ))}
+            </select>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+              <button
+                className="pro-button pro-button-secondary"
+                onClick={() => {
+                  // 프로파일이 선택되어 있으면 해당 프로파일의 잉크만, 아니면 전체 잉크
+                  if (currentVendorProfile) {
+                    const profile = vendorProfiles.find(p => p.id === currentVendorProfile);
+                    if (profile) {
+                      setSelectedInks(profile.preparedInks);
+                    }
+                  } else {
+                    const allInkIds = inkDB.getAllInks().map(ink => ink.id);
+                    setSelectedInks(allInkIds);
+                  }
+                }}
+              >
+                전체 선택
+              </button>
+              <button
+                className="pro-button pro-button-secondary"
+                onClick={() => setSelectedInks([])}
+              >
+                전체 해제
+              </button>
+            </div>
+          </h2>
         </div>
         <div className="pro-card-body">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            {/* Ink Selection */}
-            <div>
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '12px', textTransform: 'uppercase' }}>
-                Base Inks
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
-                {/* Process Inks */}
-                <div style={{ fontWeight: 600, fontSize: '0.75rem', color: '#666', marginTop: '8px' }}>Process Inks</div>
-                {inkDB.getProcessInks().map(ink => (
-                  <label key={ink.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedInks.includes(ink.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedInks([...selectedInks, ink.id]);
-                        } else {
-                          setSelectedInks(selectedInks.filter(i => i !== ink.id));
-                        }
-                      }}
-                    />
-                    <span style={{ textTransform: 'capitalize' }}>{ink.name}</span>
-                  </label>
-                ))}
-                
-                {/* Spot Inks */}
-                <div style={{ fontWeight: 600, fontSize: '0.75rem', color: '#666', marginTop: '12px' }}>Spot Inks</div>
-                {inkDB.getSpotInks().map(ink => (
-                  <label key={ink.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedInks.includes(ink.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedInks([...selectedInks, ink.id]);
-                        } else {
-                          setSelectedInks(selectedInks.filter(i => i !== ink.id));
-                        }
-                      }}
-                    />
-                    <span style={{ textTransform: 'capitalize' }}>{ink.name}</span>
-                  </label>
-                ))}
-                
-                {/* Medium */}
-                <div style={{ fontWeight: 600, fontSize: '0.75rem', color: '#666', marginTop: '12px' }}>Medium</div>
-                {inkDB.getAllInks().filter(ink => ink.type === 'medium').map(ink => (
-                  <label key={ink.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '12px' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedInks.includes(ink.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedInks([...selectedInks, ink.id]);
-                        } else {
-                          setSelectedInks(selectedInks.filter(i => i !== ink.id));
-                        }
-                      }}
-                    />
-                    <span>{ink.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Print Settings */}
-            <div>
-              <h3 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '12px', textTransform: 'uppercase' }}>
-                Print Settings
-              </h3>
+          {/* Print Settings - 상단 */}
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '12px', textTransform: 'uppercase' }}>
+              Print Settings
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div className="pro-input-group">
                 <label className="pro-label">Print Method</label>
                 <select 
@@ -620,219 +1012,508 @@ function ProfessionalApp() {
                 <select 
                   className="pro-input"
                   value={printSettings.substrate}
-                  onChange={(e) => setPrintSettings({ ...printSettings, substrate: e.target.value })}
+                  onChange={(e) => {
+                    const substrate = e.target.value;
+                    let substrateLab = printSettings.substrateLab;
+                    
+                    // 원단 타입에 따른 프리셋 Lab 값
+                    switch(substrate) {
+                      case 'white_coated':
+                        substrateLab = { L: 95, a: 0, b: -2 };
+                        break;
+                      case 'white_uncoated':
+                        substrateLab = { L: 92, a: 0.5, b: 2 };
+                        break;
+                      case 'kraft':
+                        substrateLab = { L: 70, a: 5, b: 20 };
+                        break;
+                      case 'custom':
+                        // 현재 값 유지
+                        break;
+                    }
+                    
+                    setPrintSettings({ ...printSettings, substrate, substrateLab });
+                  }}
                 >
                   <option value="white_coated">White Coated</option>
                   <option value="white_uncoated">White Uncoated</option>
                   <option value="kraft">Kraft Paper</option>
+                  <option value="custom">Custom (Enter Lab)</option>
                 </select>
               </div>
             </div>
+            
+            {/* 원단 CIELAB 값 입력 */}
+            <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#495057', textTransform: 'uppercase' }}>
+                  원단 CIELAB 값 (Substrate CIELAB)
+                </label>
+                <span style={{ marginLeft: '8px', fontSize: '0.7rem', color: '#6c757d' }}>
+                  * 실제 원단의 측정값을 입력하세요
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#6c757d', display: 'block', marginBottom: '4px' }}>L* (명도)</label>
+                  <input
+                    type="number"
+                    className="pro-input"
+                    value={printSettings.substrateLab.L}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setPrintSettings({ 
+                          ...printSettings, 
+                          substrateLab: { ...printSettings.substrateLab, L: 95 }
+                        });
+                      } else {
+                        setPrintSettings({ 
+                          ...printSettings, 
+                          substrateLab: { ...printSettings.substrateLab, L: parseFloat(val) }
+                        });
+                      }
+                    }}
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#6c757d', display: 'block', marginBottom: '4px' }}>a* (적-녹)</label>
+                  <input
+                    type="number"
+                    className="pro-input"
+                    value={printSettings.substrateLab.a}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setPrintSettings({ 
+                          ...printSettings, 
+                          substrateLab: { ...printSettings.substrateLab, a: 0 }
+                        });
+                      } else {
+                        setPrintSettings({ 
+                          ...printSettings, 
+                          substrateLab: { ...printSettings.substrateLab, a: parseFloat(val) }
+                        });
+                      }
+                    }}
+                    step="0.1"
+                    min="-128"
+                    max="128"
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.7rem', color: '#6c757d', display: 'block', marginBottom: '4px' }}>b* (황-청)</label>
+                  <input
+                    type="number"
+                    className="pro-input"
+                    value={printSettings.substrateLab.b}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') {
+                        setPrintSettings({ 
+                          ...printSettings, 
+                          substrateLab: { ...printSettings.substrateLab, b: -2 }
+                        });
+                      } else {
+                        setPrintSettings({ 
+                          ...printSettings, 
+                          substrateLab: { ...printSettings.substrateLab, b: parseFloat(val) }
+                        });
+                      }
+                    }}
+                    step="0.1"
+                    min="-128"
+                    max="128"
+                    style={{ fontSize: '0.875rem' }}
+                  />
+                </div>
+              </div>
+              {/* 원단 색상 미리보기 */}
+              <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ 
+                  width: '60px', 
+                  height: '30px', 
+                  borderRadius: '4px',
+                  border: '1px solid #dee2e6',
+                  backgroundColor: `lab(${printSettings.substrateLab.L}% ${printSettings.substrateLab.a} ${printSettings.substrateLab.b})`
+                }} />
+                <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>
+                  현재 원단 색상: L*: {printSettings.substrateLab.L.toFixed(1)}, a*: {printSettings.substrateLab.a.toFixed(1)}, b*: {printSettings.substrateLab.b.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Base Inks - 하단 */}
+          <div>
+            <h3 style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '12px', textTransform: 'uppercase' }}>
+              Base Inks
+            </h3>
+            {/* 가로 배열 그리드 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              {/* Process Inks */}
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.7rem', color: '#666', marginBottom: '6px' }}>Process Inks</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                {inkDB.getProcessInks().map(ink => {
+                  const inkLab = ink.concentrations?.[100] || { L: 50, a: 0, b: 0 };
+                  const inkRgb = labToRgb(inkLab.L, inkLab.a, inkLab.b);
+                  const inkColor = `rgb(${Math.round(inkRgb.r)}, ${Math.round(inkRgb.g)}, ${Math.round(inkRgb.b)})`;
+                  
+                  return (
+                    <label key={ink.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedInks.includes(ink.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedInks([...selectedInks, ink.id]);
+                          } else {
+                            setSelectedInks(selectedInks.filter(i => i !== ink.id));
+                          }
+                        }}
+                      />
+                      <div style={{ 
+                        width: '20px', 
+                        height: '20px', 
+                        backgroundColor: inkColor,
+                        border: '1px solid #ccc',
+                        borderRadius: '3px',
+                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+                      }} />
+                      <span style={{ textTransform: 'capitalize', flex: 1 }}>{ink.name}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const info = [];
+                          info.push(`${ink.name} 잉크 정보:`);
+                          info.push('');
+                          if (ink.concentrations) {
+                            Object.entries(ink.concentrations).forEach(([conc, lab]) => {
+                              info.push(`${conc}% 농도:`);
+                              info.push(`  Lab: L=${lab.L}, a=${lab.a}, b=${lab.b}`);
+                              const rgb = labToRgb(lab.L, lab.a, lab.b);
+                              info.push(`  RGB: R=${Math.round(rgb.r)}, G=${Math.round(rgb.g)}, B=${Math.round(rgb.b)}`);
+                            });
+                          }
+                          setInfoModal({
+                            isOpen: true,
+                            title: `${ink.name} 잉크 정보`,
+                            content: info
+                          });
+                        }}
+                        style={{
+                          padding: '2px 6px',
+                          fontSize: '11px',
+                          backgroundColor: '#f0f0f0',
+                          border: '1px solid #ccc',
+                          borderRadius: '3px',
+                          cursor: 'pointer'
+                        }}
+                        title="잉크 정보 보기"
+                      >
+                        ?
+                      </button>
+                    </label>
+                  );
+                })}
+                </div>
+              </div>
+              
+              {/* Spot Inks */}
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.7rem', color: '#666', marginBottom: '6px' }}>Spot Inks</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {inkDB.getSpotInks().map(ink => {
+                  const inkLab = ink.concentrations?.[100] || { L: 50, a: 0, b: 0 };
+                  const inkRgb = labToRgb(inkLab.L, inkLab.a, inkLab.b);
+                  const inkColor = `rgb(${Math.round(inkRgb.r)}, ${Math.round(inkRgb.g)}, ${Math.round(inkRgb.b)})`;
+                  
+                  return (
+                    <label key={ink.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedInks.includes(ink.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedInks([...selectedInks, ink.id]);
+                          } else {
+                            setSelectedInks(selectedInks.filter(i => i !== ink.id));
+                          }
+                        }}
+                      />
+                      <div style={{ 
+                        width: '20px', 
+                        height: '20px', 
+                        backgroundColor: inkColor,
+                        border: '1px solid #ccc',
+                        borderRadius: '3px',
+                        boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+                      }} />
+                      <span style={{ textTransform: 'capitalize', flex: 1 }}>{ink.name}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const info = [];
+                          info.push(`${ink.name} 잉크 정보:`);
+                          info.push('');
+                          if (ink.concentrations) {
+                            Object.entries(ink.concentrations).forEach(([conc, lab]) => {
+                              info.push(`${conc}% 농도:`);
+                              info.push(`  Lab: L=${lab.L}, a=${lab.a}, b=${lab.b}`);
+                              const rgb = labToRgb(lab.L, lab.a, lab.b);
+                              info.push(`  RGB: R=${Math.round(rgb.r)}, G=${Math.round(rgb.g)}, B=${Math.round(rgb.b)}`);
+                            });
+                          }
+                          setInfoModal({
+                            isOpen: true,
+                            title: `${ink.name} 잉크 정보`,
+                            content: info
+                          });
+                        }}
+                        style={{
+                          padding: '2px 6px',
+                          fontSize: '11px',
+                          backgroundColor: '#f0f0f0',
+                          border: '1px solid #ccc',
+                          borderRadius: '3px',
+                          cursor: 'pointer'
+                        }}
+                        title="잉크 정보 보기"
+                      >
+                        ?
+                      </button>
+                    </label>
+                  );
+                })}
+                </div>
+              </div>
+              
+              {/* Fluorescent Inks */}
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.7rem', color: '#666', marginBottom: '6px' }}>Fluorescent Inks</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                {inkDB.getFluorescentInks && inkDB.getFluorescentInks().map(ink => {
+                  const inkLab = ink.concentrations?.[100] || { L: 50, a: 0, b: 0 };
+                  const inkRgb = labToRgb(inkLab.L, inkLab.a, inkLab.b);
+                  const inkColor = `rgb(${Math.round(inkRgb.r)}, ${Math.round(inkRgb.g)}, ${Math.round(inkRgb.b)})`;
+                  
+                  return (
+                    <label key={ink.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedInks.includes(ink.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedInks([...selectedInks, ink.id]);
+                          } else {
+                            setSelectedInks(selectedInks.filter(i => i !== ink.id));
+                          }
+                        }}
+                      />
+                      <div style={{ 
+                        width: '20px', 
+                        height: '20px', 
+                        backgroundColor: inkColor,
+                        border: '2px solid ' + inkColor,
+                        borderRadius: '3px',
+                        boxShadow: `0 0 8px ${inkColor}, inset 0 0 8px rgba(255,255,255,0.3)`,
+                        background: `linear-gradient(135deg, ${inkColor} 0%, rgba(255,255,255,0.3) 50%, ${inkColor} 100%)`
+                      }} title="Fluorescent" />
+                      <span style={{ textTransform: 'capitalize' }}>{ink.name}</span>
+                    </label>
+                  );
+                })}
+                </div>
+              </div>
+              
+              {/* Medium */}
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '0.7rem', color: '#666', marginBottom: '6px' }}>Medium</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+                {inkDB.getAllInks().filter(ink => ink.type === 'medium').map(ink => {
+                  const inkColor = ink.id === 'transparent_white' ? 'rgba(255, 255, 255, 0.8)' : 
+                                   ink.id === 'extender' ? 'rgba(240, 240, 240, 0.5)' : 
+                                   'rgba(255, 255, 255, 0.3)';
+                  
+                  return (
+                    <label key={ink.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '8px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={selectedInks.includes(ink.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedInks([...selectedInks, ink.id]);
+                          } else {
+                            setSelectedInks(selectedInks.filter(i => i !== ink.id));
+                          }
+                        }}
+                      />
+                      <div style={{ 
+                        width: '20px', 
+                        height: '20px', 
+                        backgroundColor: inkColor,
+                        border: '1px solid #ccc',
+                        borderRadius: '3px',
+                        backgroundImage: ink.type === 'medium' ? 
+                          'linear-gradient(45deg, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%, #ddd), linear-gradient(45deg, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%, #ddd)' : 
+                          'none',
+                        backgroundSize: '10px 10px',
+                        backgroundPosition: '0 0, 5px 5px'
+                      }} />
+                      <span>{ink.name}</span>
+                    </label>
+                  );
+                })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 최적화 레시피 개수 선택 */}
+          <div style={{ marginTop: '20px', padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+            <label style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              fontSize: '0.875rem',
+              fontWeight: 500
+            }}>
+              <span>최적화 레시피 개수:</span>
+              <select 
+                value={maxOptimizedRecipes}
+                onChange={(e) => setMaxOptimizedRecipes(Number(e.target.value))}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  backgroundColor: 'white',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value={3}>상위 3개</option>
+                <option value={5}>상위 5개</option>
+                <option value={7}>상위 7개</option>
+                <option value={10}>상위 10개</option>
+              </select>
+              <span style={{ fontSize: '0.75rem', color: '#666', marginLeft: 'auto' }}>
+                (많을수록 계산 시간 증가)
+              </span>
+            </label>
           </div>
 
           <button
             className="pro-button pro-button-primary"
             onClick={handleCalculate}
             disabled={isCalculating || selectedInks.length === 0}
-            style={{ marginTop: '24px', width: '100%' }}
+            style={{ marginTop: '12px', width: '100%', position: 'relative' }}
           >
-            {isCalculating ? '계산 중...' : '레시피 계산'}
+            {isCalculating ? (
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <span style={{
+                  display: 'inline-block',
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  borderTop: '2px solid white',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                계산 중...
+              </span>
+            ) : (
+              `레시피 계산 (${selectedInks.length}개 잉크 선택됨)`
+            )}
           </button>
         </div>
       </div>
 
       {/* Recipe Result */}
-      {currentRecipe && (
-        <div className="pro-card">
-          <div className="pro-card-header">
-            <h2 className="pro-card-title">
-              계산된 잉크 레시피
-              <span className="status-indicator status-success" style={{ marginLeft: 'auto' }}>
-                ΔE {currentRecipe.deltaE.toFixed(2)}
-              </span>
-            </h2>
-          </div>
-          <div className="pro-card-body">
-            <table className="pro-table">
-              <thead>
-                <tr>
-                  <th>잉크</th>
-                  <th>비율</th>
-                  <th>농도</th>
-                  <th>타입</th>
-                  <th>L*</th>
-                  <th>a*</th>
-                  <th>b*</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentRecipe.inks.map((ink, index) => {
-                  const inkData = inkDB.getInkById(ink.inkId);
-                  const inkLab = inkData?.concentrations?.[100] || { L: 0, a: 0, b: 0 };
-                  return (
-                    <tr key={index}>
-                      <td style={{ textTransform: 'capitalize' }}>{ink.inkId}</td>
-                      <td>{ink.ratio.toFixed(1)}%</td>
-                      <td>{ink.concentration}%</td>
-                      <td>{inkData?.type || 'process'}</td>
-                      <td>{inkLab.L.toFixed(1)}</td>
-                      <td>{inkLab.a.toFixed(1)}</td>
-                      <td>{inkLab.b.toFixed(1)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr style={{ fontWeight: 600 }}>
-                  <td>합계</td>
-                  <td>{currentRecipe.inks.reduce((sum, ink) => sum + ink.ratio, 0).toFixed(1)}%</td>
-                  <td colSpan={5}></td>
-                </tr>
-              </tfoot>
-            </table>
-
-            {/* Mixed Color Result */}
-            <div className="data-grid" style={{ marginTop: '24px' }}>
-              <div className="data-item">
-                <div className="data-item-label">혼합 결과 L*</div>
-                <div className="data-item-value">{currentRecipe.mixed.L.toFixed(1)}</div>
-              </div>
-              <div className="data-item">
-                <div className="data-item-label">혼합 결과 a*</div>
-                <div className="data-item-value">{currentRecipe.mixed.a.toFixed(1)}</div>
-              </div>
-              <div className="data-item">
-                <div className="data-item-label">혼합 결과 b*</div>
-                <div className="data-item-value">{currentRecipe.mixed.b.toFixed(1)}</div>
-              </div>
-              <div className="data-item">
-                <div className="data-item-label">Delta E 2000</div>
-                <div className="data-item-value">{currentRecipe.deltaE.toFixed(2)}</div>
-              </div>
-            </div>
-          </div>
+      <RecipeResults 
+        currentRecipe={currentRecipe}
+        optimizedRecipes={optimizedRecipes}
+        inkDB={inkDB}
+        onOpenCorrectionModal={() => setShowCorrectionModal(true)}
+        activeRecipeId={activeRecipeId}
+        onSelectRecipe={selectRecipeForWork}
+        onUpdateRecipeStatus={updateRecipeStatus}
+        onRecipeUpdate={(updatedRecipe) => {
+          setCurrentRecipe(updatedRecipe);
+          // 레시피 히스토리 업데이트
+          const newHistory = [...recipeHistory];
+          const index = newHistory.findIndex(r => r.id === updatedRecipe.id);
+          if (index >= 0) {
+            newHistory[index] = updatedRecipe;
+            setRecipeHistory(newHistory);
+          }
+        }}
+        targetColor={targetColor}
+      />
+      
+      {/* Correction History */}
+      {correctionHistory.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <CorrectionHistory
+            correctionHistory={correctionHistory}
+            onClearHistory={() => {
+              if (confirm('모든 보정 이력을 삭제하시겠습니까?')) {
+                setCorrectionHistory([]);
+                localStorage.removeItem('correctionHistory');
+              }
+            }}
+          />
         </div>
       )}
     </>
   );
 
   const renderColorDatabase = () => (
-    <div className="pro-card">
-      <div className="pro-card-header">
-        <h2 className="pro-card-title">색상 데이터베이스</h2>
-      </div>
-      <div className="pro-card-body">
-        <table className="pro-table">
-          <thead>
-            <tr>
-              <th>잉크명</th>
-              <th>타입</th>
-              <th>L* (100%)</th>
-              <th>a* (100%)</th>
-              <th>b* (100%)</th>
-              <th>농도</th>
-              <th>색상</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inkDB.getAllInks().map((ink) => {
-              const lab100 = ink.concentrations?.[100] || { L: 0, a: 0, b: 0 };
-              const rgbColor = labToRgb(lab100.L, lab100.a, lab100.b);
-              return (
-                <tr key={ink.id}>
-                  <td>{ink.name}</td>
-                  <td>{ink.type}</td>
-                  <td>{lab100.L.toFixed(1)}</td>
-                  <td>{lab100.a.toFixed(1)}</td>
-                  <td>{lab100.b.toFixed(1)}</td>
-                  <td>100%, 70%, 40%</td>
-                  <td>
-                    <div style={{
-                      width: '30px',
-                      height: '20px',
-                      backgroundColor: `rgb(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b})`,
-                      border: '1px solid #dee2e6',
-                      borderRadius: '3px'
-                    }} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <>
+      <ColorDatabase
+        inkDB={inkDB}
+        customInkValues={customInkValues}
+        setCustomInkValues={setCustomInkValues}
+        selectedInksForProfile={selectedInksForProfile}
+        setSelectedInksForProfile={setSelectedInksForProfile}
+        labToRgb={labToRgb}
+        saveVendorProfile={saveVendorProfile}
+        setShowVendorModal={setShowVendorModal}
+        onShowInfo={(title, content) => setInfoModal({ isOpen: true, title, content })}
+      />
+      <VendorProfileManager
+        vendorProfiles={vendorProfiles}
+        currentVendorProfile={currentVendorProfile}
+        showVendorModal={showVendorModal}
+        editingProfile={editingProfile}
+        setShowVendorModal={setShowVendorModal}
+        setEditingProfile={setEditingProfile}
+        selectVendorProfile={selectVendorProfile}
+        deleteVendorProfile={deleteVendorProfile}
+        updateVendorProfile={updateVendorProfile}
+        inkDB={inkDB}
+      />
+    </>
   );
 
   const renderRecipeManagement = () => (
-    <div className="pro-card">
-      <div className="pro-card-header">
-        <h2 className="pro-card-title">
-          레시피 관리
-          <button 
-            className="pro-button pro-button-secondary"
-            style={{ marginLeft: 'auto' }}
-            onClick={() => setShowHistoryModal(true)}
-          >
-            상세 관리
-          </button>
-        </h2>
-      </div>
-      <div className="pro-card-body">
-        {recipeHistory.length === 0 ? (
-          <p>저장된 레시피가 없습니다.</p>
-        ) : (
-          <table className="pro-table">
-            <thead>
-              <tr>
-                <th>날짜</th>
-                <th>목표 색상</th>
-                <th>혼합 결과</th>
-                <th>Delta E</th>
-                <th>잉크 구성</th>
-                <th>작업</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recipeHistory.slice(0, 10).map((recipe, index) => {
-                const date = new Date();
-                date.setMinutes(date.getMinutes() - index * 10); // Mock dates
-                return (
-                  <tr key={index}>
-                    <td>{date.toLocaleDateString('ko-KR')}</td>
-                    <td>
-                      L*{recipe.target.L.toFixed(1)} 
-                      a*{recipe.target.a.toFixed(1)} 
-                      b*{recipe.target.b.toFixed(1)}
-                    </td>
-                    <td>
-                      L*{recipe.mixed.L.toFixed(1)} 
-                      a*{recipe.mixed.a.toFixed(1)} 
-                      b*{recipe.mixed.b.toFixed(1)}
-                    </td>
-                    <td>{recipe.deltaE.toFixed(2)}</td>
-                    <td>{recipe.inks.length}개 잉크</td>
-                    <td>
-                      <button
-                        className="pro-button pro-button-secondary"
-                        style={{ padding: '4px 12px', fontSize: '0.75rem' }}
-                        onClick={() => {
-                          setTargetColor(recipe.target);
-                          setCurrentRecipe(recipe);
-                          setCurrentPage('calculator');
-                        }}
-                      >
-                        불러오기
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
+    <RecipeManagement
+      recipeHistory={recipeHistory}
+      showHistoryModal={showHistoryModal}
+      setShowHistoryModal={setShowHistoryModal}
+      setTargetColor={setTargetColor}
+      setCurrentRecipe={setCurrentRecipe}
+      setCurrentPage={setCurrentPage}
+    />
   );
 
   const renderPrintProfiles = () => (
@@ -866,7 +1547,7 @@ function ProfessionalApp() {
           ))}
         </div>
         
-        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px', marginTop: '32px' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px', marginTop: '32px' }}>
           현재 설정
         </h3>
         <div className="data-grid">
@@ -906,175 +1587,18 @@ function ProfessionalApp() {
   );
 
   const renderSettings = () => (
-    <div className="pro-card">
-      <div className="pro-card-header">
-        <h2 className="pro-card-title">시스템 설정</h2>
-      </div>
-      <div className="pro-card-body">
-        <div style={{ display: 'grid', gap: '32px' }}>
-          {/* Ink Manufacturer Settings */}
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>
-              잉크 제조사 설정
-            </h3>
-            <div className="data-grid">
-              <div className="pro-input-group">
-                <label className="pro-label">제조사 선택</label>
-                <select 
-                  className="pro-input"
-                  value={manufacturerDB.currentManufacturer}
-                  onChange={(e) => {
-                    manufacturerDB.setManufacturer(e.target.value);
-                    alert('제조사가 변경되었습니다. 새로운 잉크 데이터가 적용됩니다.');
-                    window.location.reload();
-                  }}
-                >
-                  {manufacturerDB.manufacturers.map(mfg => (
-                    <option key={mfg.id} value={mfg.id}>
-                      {mfg.name} ({mfg.country})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="value-box">
-                <div className="value-label">현재 제조사 정보</div>
-                <div className="value-content" style={{ fontSize: '1rem' }}>
-                  {manufacturerDB.getCurrentManufacturer().data?.manufacturer}
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#666', marginTop: '4px' }}>
-                  시리즈: {manufacturerDB.getCurrentManufacturer().data?.series}
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#666' }}>
-                  잉크 수: {manufacturerDB.getCurrentInks().length}개
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Delta E Settings */}
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>
-              Delta E 계산 방법
-            </h3>
-            <div className="data-grid">
-              <div className="pro-input-group">
-                <label className="pro-label">계산 방법</label>
-                <select 
-                  className="pro-input"
-                  value={deltaEMethod}
-                  onChange={(e) => setDeltaEMethod(e.target.value as any)}
-                >
-                  <option value="CIE2000">CIE2000 (권장)</option>
-                  <option value="CIE1994">CIE1994</option>
-                  <option value="CIE1976">CIE1976</option>
-                  <option value="CMC">CMC</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Display Settings */}
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>
-              디스플레이 설정
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" defaultChecked />
-                <span>색상 정확도 경고 표시</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" defaultChecked />
-                <span>LRV(Light Reflectance Value) 표시</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input type="checkbox" />
-                <span>메탈릭 잉크 표시</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Data Management */}
-          <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '16px' }}>
-              데이터 관리
-            </h3>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button className="pro-button pro-button-secondary">
-                레시피 내보내기
-              </button>
-              <button className="pro-button pro-button-secondary">
-                레시피 가져오기
-              </button>
-              <button 
-                className="pro-button pro-button-secondary"
-                style={{ marginLeft: 'auto', borderColor: '#dc3545', color: '#dc3545' }}
-                onClick={() => {
-                  if (confirm('모든 레시피 기록을 삭제하시겠습니까?')) {
-                    localStorage.removeItem('recipeHistory');
-                    setRecipeHistory([]);
-                    alert('레시피 기록이 삭제되었습니다.');
-                  }
-                }}
-              >
-                기록 초기화
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <Settings
+      manufacturerDB={manufacturerDB}
+      deltaEMethod={deltaEMethod}
+      setDeltaEMethod={setDeltaEMethod}
+      setRecipeHistory={setRecipeHistory}
+      onShowInfo={(title, content) => setInfoModal({ isOpen: true, title, content })}
+    />
   );
 
   return (
     <div className="professional-app">
-      {/* Professional Header */}
-      <header className="professional-header">
-        <div className="header-content">
-          <div>
-            <h1 className="header-title">원라벨 컬러연구소</h1>
-            <p className="header-subtitle">Professional Color Recipe Management System</p>
-          </div>
-          <nav className="header-nav">
-            <a 
-              href="#" 
-              className={`nav-item ${currentPage === 'calculator' ? 'active' : ''}`}
-              onClick={(e) => { e.preventDefault(); setCurrentPage('calculator'); }}
-            >
-              계산기
-            </a>
-            <a 
-              href="#" 
-              className={`nav-item ${currentPage === 'database' ? 'active' : ''}`}
-              onClick={(e) => { e.preventDefault(); setCurrentPage('database'); }}
-            >
-              색상 데이터베이스
-            </a>
-            <a 
-              href="#" 
-              className={`nav-item ${currentPage === 'recipes' ? 'active' : ''}`}
-              onClick={(e) => { e.preventDefault(); setCurrentPage('recipes'); }}
-            >
-              레시피 관리
-            </a>
-            <a 
-              href="#" 
-              className={`nav-item ${currentPage === 'profiles' ? 'active' : ''}`}
-              onClick={(e) => { e.preventDefault(); setCurrentPage('profiles'); }}
-            >
-              인쇄 프로파일
-            </a>
-            <a 
-              href="#" 
-              className={`nav-item ${currentPage === 'settings' ? 'active' : ''}`}
-              onClick={(e) => { e.preventDefault(); setCurrentPage('settings'); }}
-            >
-              설정
-            </a>
-          </nav>
-        </div>
-      </header>
+      <Navigation currentPage={currentPage} setCurrentPage={setCurrentPage} />
 
       <div className="professional-container">
         {renderPage()}
@@ -1099,7 +1623,7 @@ function ProfessionalApp() {
             <RecipeHistory 
               currentRecipe={currentRecipe}
               onSelectRecipe={(recipe) => {
-                setTargetColor(recipe.target || recipe.targetColor?.lab || { L: 50, a: 0, b: 0 });
+                setTargetColor(recipe.target || recipe.targetColor?.lab || { L: 0, a: 0, b: 0 });
                 setCurrentRecipe(recipe);
                 setShowHistoryModal(false);
                 setCurrentPage('calculator');
@@ -1111,6 +1635,24 @@ function ProfessionalApp() {
           </div>
         </div>
       )}
+      
+      {/* Info Modal */}
+      <InfoModal
+        isOpen={infoModal.isOpen}
+        onClose={() => setInfoModal({ isOpen: false, content: '' })}
+        title={infoModal.title}
+        content={infoModal.content}
+      />
+      
+      {/* Color Correction Modal */}
+      <ColorCorrectionModal
+        isOpen={showCorrectionModal}
+        onClose={() => setShowCorrectionModal(false)}
+        targetColor={targetColor}
+        currentRecipe={currentRecipe}
+        availableInks={inkDB}
+        onApplyCorrection={handleApplyCorrection}
+      />
     </div>
   );
 }

@@ -15,7 +15,7 @@ import type {
 
 // 코어 모듈 import
 import { ColorScience } from '../../core/colorScience.js';
-import { inkDB, baseInks } from '../../core/inkDatabase.js';
+import { inkDB } from '../../core/inkDatabase.js';
 import { MixingEngine } from '../../core/mixingEngine.js';
 import { AdvancedMixingEngine } from '../../core/advancedMixingEngine.js';
 import { OptimizedMixingEngine } from '../../core/optimizedMixingEngine.js';
@@ -104,7 +104,7 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
     }
   }, [deltaEMethod, deltaEWeights]);
 
-  // 최적화된 레시피 계산 함수 (모든 농도 고려)
+  // 최적화된 레시피 계산 함수 (모든 농도 고려, 여러 결과 반환)
   const calculateOptimizedRecipe = useCallback(async (
     targetColor: LabColor,
     options: {
@@ -114,16 +114,20 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
       use70?: boolean;
       use40?: boolean;
       costWeight?: number;
+      maxResults?: number;
     } = {}
-  ): Promise<Recipe> => {
+  ): Promise<Recipe | Recipe[]> => {
+    console.log('calculateOptimizedRecipe called with:', { targetColor, options });
+    
     // 기본 옵션 설정
     const defaultOptions = {
-      maxInks: 4,
+      maxInks: 5,  // 4에서 5로 증가하여 더 정확한 매칭 가능
       includeWhite: true,
       use100: true,
       use70: true,
       use40: true,
-      costWeight: 0.2
+      costWeight: 0.1,  // 비용 가중치를 낮춰서 정확도 우선
+      maxResults: 5  // 기본값 5개
     };
     const finalOptions = { ...defaultOptions, ...options };
 
@@ -137,36 +141,139 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
       throw new Error('최소 하나의 농도를 선택해야 합니다');
     }
 
-    // OptimizedMixingEngine 사용
+    console.log('Using concentrations:', concentrations);
+    
+    // LocalStorage에서 현재 프로파일의 커스텀 값 적용
+    const currentProfileId = localStorage.getItem('currentVendorProfile');
+    let customValues = null;
+    
+    if (currentProfileId) {
+      // Load profile data
+      const profiles = localStorage.getItem('vendorProfiles');
+      if (profiles) {
+        try {
+          const parsedProfiles = JSON.parse(profiles);
+          const currentProfile = parsedProfiles.find((p: any) => p.id === currentProfileId);
+          if (currentProfile && currentProfile.customValues) {
+            customValues = JSON.stringify(currentProfile.customValues);
+          }
+        } catch (e) {
+          console.error('Failed to load profile custom values:', e);
+        }
+      }
+    } else {
+      // Use default custom values if no profile selected
+      customValues = localStorage.getItem('customInkValues_default');
+    }
+    let modifiedInks = [...inkDB.baseInks];
+    
+    if (customValues) {
+      try {
+        const parsed = JSON.parse(customValues);
+        modifiedInks = inkDB.baseInks.map(ink => {
+          if (parsed[ink.id]) {
+            const newInk = { ...ink, concentrations: { ...ink.concentrations } };
+            Object.keys(parsed[ink.id]).forEach(concentration => {
+              const conc = parseInt(concentration);
+              if (parsed[ink.id][conc]) {
+                newInk.concentrations[conc] = parsed[ink.id][conc];
+              }
+            });
+            return newInk;
+          }
+          return ink;
+        });
+      } catch (e) {
+        console.error('Failed to apply custom ink values:', e);
+      }
+    }
+    
+    console.log('inkDB.baseInks:', modifiedInks);
+
+    // OptimizedMixingEngine 사용 (최고 정확도 우선)
     const optimizedEngine = new OptimizedMixingEngine();
     
+    // 원단 Lab 값을 고려한 목표색 보정
+    let adjustedTargetColor = targetColor;
+    if (finalOptions.substrateLab) {
+      // 원단색과 목표색의 차이를 계산하여 보정
+      // 기본 백색 원단 (L:95, a:0, b:-2)과의 차이를 고려
+      const defaultSubstrate = { L: 95, a: 0, b: -2 };
+      const substrateDiff = {
+        L: finalOptions.substrateLab.L - defaultSubstrate.L,
+        a: finalOptions.substrateLab.a - defaultSubstrate.a,
+        b: finalOptions.substrateLab.b - defaultSubstrate.b
+      };
+      
+      // 목표색을 원단 차이만큼 보정
+      adjustedTargetColor = {
+        L: targetColor.L - substrateDiff.L,
+        a: targetColor.a - substrateDiff.a,
+        b: targetColor.b - substrateDiff.b
+      };
+      
+      console.log('Substrate adjustment:', { 
+        original: targetColor, 
+        substrate: finalOptions.substrateLab,
+        adjusted: adjustedTargetColor 
+      });
+    }
+    
     // 모든 가용 잉크를 고려한 최적 배합 찾기
-    const result = optimizedEngine.findOptimalMix(targetColor, baseInks, {
+    const result = optimizedEngine.findOptimalMix(adjustedTargetColor, modifiedInks, {
       maxInks: finalOptions.maxInks,
       preferredConcentrations: concentrations,
       includeWhite: finalOptions.includeWhite,
-      costWeight: finalOptions.costWeight
+      costWeight: finalOptions.costWeight,
+      maxResults: finalOptions.maxResults
     });
 
     if (!result) {
       throw new Error('최적 배합을 찾을 수 없습니다');
     }
 
-    // 결과 포맷팅
+    // 결과 포맷팅 (이제 배열 반환)
     const formatted = optimizedEngine.formatResult(result);
+    console.log('Formatted results:', formatted);
     
-    // Recipe 객체 생성
+    if (!formatted) {
+      throw new Error('포맷팅 실패');
+    }
+    
+    // 배열인 경우 여러 Recipe 객체 생성
+    if (Array.isArray(formatted)) {
+      return formatted.map((fmt: any) => ({
+        target: targetColor,
+        inks: fmt.inks.map((ink: any) => {
+          const ratio = typeof ink.percentage === 'number' ? ink.percentage : parseFloat(ink.percentage) || 0;
+          return {
+            inkId: ink.baseInk || ink.id || ink.name,
+            ratio: ratio,
+            concentration: ink.concentration || 100
+          };
+        }),
+        mixed: fmt.achievedLab,
+        deltaE: parseFloat(fmt.deltaE) || 0,
+        method: 'optimized' as const,
+        optimization: 'all-concentrations' as const
+      }));
+    }
+    
+    // 단일 결과인 경우 (하위 호환성)
     const recipe: Recipe = {
       target: targetColor,
-      inks: formatted.inks.map((ink: any) => ({
-        inkId: ink.baseInk || ink.id,
-        ratio: ink.percentage,  // 이미 백분율이므로 그대로 사용
-        concentration: ink.concentration
-      })),
+      inks: formatted.inks.map((ink: any) => {
+        const ratio = typeof ink.percentage === 'number' ? ink.percentage : parseFloat(ink.percentage) || 0;
+        return {
+          inkId: ink.baseInk || ink.id || ink.name,
+          ratio: ratio,
+          concentration: ink.concentration || 100
+        };
+      }),
       mixed: formatted.achievedLab,
-      deltaE: parseFloat(formatted.deltaE),
-      method: 'optimized',
-      optimization: 'all-concentrations'
+      deltaE: parseFloat(formatted.deltaE) || 0,
+      method: 'optimized' as const,
+      optimization: 'all-concentrations' as const
     };
 
     return recipe;
@@ -179,10 +286,47 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
     profileId: string = 'offset',
     printSettings: { printMethod?: string; substrateType?: string } = {}
   ): Promise<Recipe> => {
-    // 선택된 잉크 데이터 가져오기
+    // LocalStorage에서 현재 프로파일의 커스텀 값 확인
+    const currentProfileId = localStorage.getItem('currentVendorProfile');
+    let customValues = null;
+    
+    if (currentProfileId) {
+      // Load profile data
+      const profiles = localStorage.getItem('vendorProfiles');
+      if (profiles) {
+        try {
+          const parsedProfiles = JSON.parse(profiles);
+          const currentProfile = parsedProfiles.find((p: any) => p.id === currentProfileId);
+          if (currentProfile && currentProfile.customValues) {
+            customValues = JSON.stringify(currentProfile.customValues);
+          }
+        } catch (e) {
+          console.error('Failed to load profile custom values:', e);
+        }
+      }
+    } else {
+      // Use default custom values if no profile selected
+      customValues = localStorage.getItem('customInkValues_default');
+    }
+    let customInkData: any = {};
+    
+    if (customValues) {
+      try {
+        customInkData = JSON.parse(customValues);
+      } catch (e) {
+        console.error('Failed to parse custom ink values:', e);
+      }
+    }
+    
+    // 선택된 잉크 데이터 가져오기 (커스텀 값 적용)
     const selectedInks = selectedInkIds.map(id => {
       const ink = inkDB.getInkById(id);
       if (!ink) throw new Error(`Ink ${id} not found`);
+      
+      // 커스텀 값이 있으면 사용, 없으면 원본 사용
+      if (customInkData[id] && customInkData[id][100]) {
+        return customInkData[id][100];
+      }
       return inkDB.getInkLab(id, 100); // 기본 100% 농도
     });
 
@@ -334,33 +478,6 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
 
   // 잉크 데이터베이스 가져오기 (LocalStorage 지원)
   const getInkDatabase = useCallback(() => {
-    // LocalStorage에서 커스텀 값 확인
-    const customValues = localStorage.getItem('customInkValues');
-    if (customValues) {
-      try {
-        const parsed = JSON.parse(customValues);
-        if (parsed.baseInks) {
-          // 기존 잉크 업데이트
-          parsed.baseInks.forEach((customInk: any) => {
-            const index = inkDB.baseInks.findIndex((ink: any) => ink.id === customInk.id);
-            if (index !== -1) {
-              inkDB.baseInks[index] = customInk;
-            }
-          });
-        }
-        if (parsed.metallicInks) {
-          // 메탈릭 잉크 업데이트
-          parsed.metallicInks.forEach((customInk: any) => {
-            const index = inkDB.metallicInks.findIndex((ink: any) => ink.id === customInk.id);
-            if (index !== -1) {
-              inkDB.metallicInks[index] = customInk;
-            }
-          });
-        }
-      } catch (e) {
-        console.error('Failed to load custom ink values:', e);
-      }
-    }
     return inkDB;
   }, []);
 

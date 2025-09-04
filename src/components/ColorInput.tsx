@@ -69,8 +69,8 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
         b: rgb.b.toString()
       });
       
-      // HEX 값 업데이트
-      const toHex = (n: number) => n.toString(16).padStart(2, '0');
+      // HEX 값 업데이트 (대문자로 표기)
+      const toHex = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
       setHexInputValue(`#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`);
     }
   }, [value]);
@@ -172,10 +172,10 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
     return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
   }, [localValue, labToRgb]);
 
-  // HEX 색상 계산
+  // HEX 색상 계산 (대문자로 표기)
   const hexColor = useMemo(() => {
     const rgb = convertLabToRgb(localValue.L, localValue.a, localValue.b);
-    const toHex = (n: number) => n.toString(16).padStart(2, '0');
+    const toHex = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
     return `#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`;
   }, [localValue, labToRgb]);
 
@@ -683,34 +683,42 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
             className="color-preview-large"
             style={{ 
               backgroundColor: rgbColor,
-              width: '150px',
-              height: '150px',
-              borderRadius: '12px',
-              border: '3px solid #2d3748',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              width: '100px',
+              height: '100px',
+              borderRadius: '8px',
+              border: '2px solid #2d3748',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
             }}
           />
-          <div className="color-values" style={{ flex: 1 }}>
+          <div className="color-values" style={{ 
+            flex: 1,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: '16px',
+            alignItems: 'start'
+          }}>
             <div className="color-space-group">
-              <h4>Lab</h4>
-              <div>L*: {localValue.L.toFixed(1)}</div>
-              <div>a*: {localValue.a.toFixed(1)}</div>
-              <div>b*: {localValue.b.toFixed(1)}</div>
+              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>Lab</h4>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>L*: {localValue.L.toFixed(1)}</div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>a*: {localValue.a.toFixed(1)}</div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>b*: {localValue.b.toFixed(1)}</div>
             </div>
             <div className="color-space-group">
-              <h4>RGB</h4>
-              <div>R: {rgbColor.match(/\d+/g)?.[0] || 0}</div>
-              <div>G: {rgbColor.match(/\d+/g)?.[1] || 0}</div>
-              <div>B: {rgbColor.match(/\d+/g)?.[2] || 0}</div>
+              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>RGB</h4>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>R: {rgbColor.match(/\d+/g)?.[0] || 0}</div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>G: {rgbColor.match(/\d+/g)?.[1] || 0}</div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>B: {rgbColor.match(/\d+/g)?.[2] || 0}</div>
             </div>
             <div className="color-space-group">
-              <h4>HEX</h4>
-              <div style={{ fontFamily: 'monospace', fontSize: '14px' }}>{hexColor}</div>
+              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>HEX</h4>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>{hexColor}</div>
             </div>
             <div className="color-space-group">
-              <h4>CMYK</h4>
-              <div>C: {cmykColor.c}% M: {cmykColor.m}%</div>
-              <div>Y: {cmykColor.y}% K: {cmykColor.k}%</div>
+              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>CMYK</h4>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>C: {cmykColor.c}%</div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>M: {cmykColor.m}%</div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>Y: {cmykColor.y}%</div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>K: {cmykColor.k}%</div>
             </div>
           </div>
         </div>

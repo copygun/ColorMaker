@@ -194,9 +194,9 @@ const OptimizedMixing: React.FC<OptimizedMixingProps> = ({ targetColor }) => {
               />
               <div className="color-label">달성</div>
               <div className="lab-values">
-                L: {result.achievedLab.L.toFixed(1)}<br/>
-                a: {result.achievedLab.a.toFixed(1)}<br/>
-                b: {result.achievedLab.b.toFixed(1)}
+                L*: {result.achievedLab.L.toFixed(1)}<br/>
+                a*: {result.achievedLab.a.toFixed(1)}<br/>
+                b*: {result.achievedLab.b.toFixed(1)}
               </div>
             </div>
           </div>

@@ -39,13 +39,34 @@ export interface InkRatio {
   concentration: number;
 }
 
+export enum RecipeStatus {
+  CALCULATED = 'calculated',     // 계산 완료 (초기 상태)
+  SELECTED = 'selected',         // 작업용으로 선택됨
+  IN_PROGRESS = 'in_progress',   // 조색 진행 중
+  MEASURING = 'measuring',       // 색상 측정 중
+  COMPLETED = 'completed',       // 작업 완료
+  NEEDS_CORRECTION = 'needs_correction', // 보정 필요
+  CORRECTING = 'correcting',     // 보정 중
+  CORRECTED = 'corrected'        // 보정 완료
+}
+
 export interface Recipe {
+  id?: string;                   // 고유 ID
+  name?: string;                  // 레시피 이름 (예: "선택된 잉크", "최적화 #1")
+  type?: 'selected' | 'optimized'; // 레시피 유형
+  status?: RecipeStatus;          // 작업 상태
+  createdAt?: string;            // 생성 시간
+  startedAt?: string;            // 작업 시작 시간
+  completedAt?: string;          // 작업 완료 시간
   target: LabColor;
   inks: InkRatio[];
   mixed: LabColor;
   deltaE: number;
-  method: 'lab' | 'xyz';
-  optimization: 'simple' | 'pso';
+  method: 'lab' | 'xyz' | 'optimized';
+  optimization: 'simple' | 'pso' | 'all-concentrations';
+  isCorrection?: boolean;        // 보정된 레시피인지
+  correctionDate?: string;       // 보정 적용 시간
+  originalDeltaE?: number;       // 보정 전 Delta E
 }
 
 export interface DeltaEWeights {
