@@ -1,18 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Recipe, RecipeStatus } from '../types';
 import ColorCorrectionSection from './ColorCorrectionSection';
-
-interface InkRecipe {
-  inkId: string;
-  ratio: number;
-  concentration: number;
-}
 
 interface RecipeResultsProps {
   currentRecipe: Recipe | null;
   optimizedRecipes: Recipe[];
   inkDB: any;
-  onOpenCorrectionModal?: () => void;
   activeRecipeId?: string | null;
   onSelectRecipe?: (recipe: Recipe) => void;
   onUpdateRecipeStatus?: (recipeId: string, status: RecipeStatus) => void;
@@ -31,7 +24,6 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
   currentRecipe,
   optimizedRecipes,
   inkDB,
-  onOpenCorrectionModal,
   activeRecipeId,
   onSelectRecipe,
   onUpdateRecipeStatus,
@@ -39,7 +31,6 @@ const RecipeResults: React.FC<RecipeResultsProps> = ({
   targetColor,
   gamutWarning,
 }) => {
-  const [showCorrection, setShowCorrection] = useState<string | null>(null);
   if (!currentRecipe && optimizedRecipes.length === 0) {
     return null;
   }

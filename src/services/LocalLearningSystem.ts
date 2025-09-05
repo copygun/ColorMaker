@@ -3,7 +3,7 @@
  * 실측 데이터를 기반으로 계산 정확도를 개선하는 자체 학습 시스템
  */
 
-import type { LabColor, Recipe } from '../types';
+import type { LabColor } from '../types';
 
 export interface PrintResult {
   id: string;
@@ -115,7 +115,7 @@ class LocalLearningSystem {
   private readonly PROFILE_KEY = 'calibrationProfiles';
   private readonly ACTIVE_PROFILE_KEY = 'activeCalibrationProfile';
   private readonly MIN_SAMPLES_FOR_LEARNING = 5;
-  private readonly OUTLIER_THRESHOLD = 3.0; // 표준편차 기준
+  // private readonly OUTLIER_THRESHOLD = 3.0; // 표준편차 기준 - not used yet
 
   /**
    * 실측 결과 저장

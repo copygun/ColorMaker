@@ -9,8 +9,6 @@ import RecipeHistory from './components/RecipeHistory';
 import ColorInput from './components/ColorInput';
 import MeasurementInfo from './components/MeasurementInfo';
 import InfoModal from './components/InfoModal';
-import BaseInksSelector from './components/BaseInksSelector';
-import PrintSettings from './components/PrintSettings';
 import RecipeResults from './components/RecipeResults';
 import VendorProfileManager from './components/VendorProfileManager';
 import ColorDatabase from './components/ColorDatabase';
@@ -21,9 +19,7 @@ import ColorCorrectionModal from './components/ColorCorrectionModal';
 import CorrectionHistory from './components/CorrectionHistory';
 import type { LabColor, Recipe } from './types';
 import { RecipeStatus } from './types';
-import CorrectionEngine from '../core/correctionEngine.js';
 import manufacturerDB from '../core/manufacturerInkDatabase.js';
-import { inkDB } from '../core/inkDatabase.js';
 import './styles/professional.css';
 
 type PageView = 'calculator' | 'database' | 'recipes' | 'profiles' | 'settings';
@@ -152,7 +148,7 @@ function ProfessionalApp() {
 
   // Active recipe management
   const [activeRecipeId, setActiveRecipeId] = useState<string | null>(null);
-  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
+  // const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
 
   // Info modal state for replacing alert()
   const [infoModal, setInfoModal] = useState<{
@@ -363,14 +359,14 @@ function ProfessionalApp() {
     setCurrentRecipe(updatedRecipe);
 
     // Update in allRecipes
-    setAllRecipes((prev) => {
-      const exists = prev.find((r) => r.id === recipe.id);
-      if (exists) {
-        return prev.map((r) => (r.id === recipe.id ? updatedRecipe : r));
-      } else {
-        return [...prev, updatedRecipe];
-      }
-    });
+    // setAllRecipes((prev) => {
+    //   const exists = prev.find((r) => r.id === recipe.id);
+    //   if (exists) {
+    //     return prev.map((r) => (r.id === recipe.id ? updatedRecipe : r));
+    //   } else {
+    //     return [...prev, updatedRecipe];
+    //   }
+    // });
 
     setInfoModal({
       isOpen: true,
@@ -401,7 +397,7 @@ function ProfessionalApp() {
       }
 
       // Update in allRecipes
-      setAllRecipes((prev) => prev.map((r) => (r.id === recipeId ? updateTimestamps(r) : r)));
+      // setAllRecipes((prev) => prev.map((r) => (r.id === recipeId ? updateTimestamps(r) : r)));
 
       // Show status message
       const statusMessages: Record<RecipeStatus, string> = {
@@ -452,14 +448,12 @@ function ProfessionalApp() {
       });
 
       // Normalize percentages to 100%
-      const totalPercentage = updatedRecipe.recipe.reduce(
-        (sum: number, ink: any) => sum + ink.percentage,
-        0,
-      );
+      const totalPercentage =
+        updatedRecipe.inks?.reduce((sum: number, ink: any) => sum + ink.ratio, 0) || 0;
 
       if (totalPercentage > 100) {
-        updatedRecipe.recipe.forEach((ink: any) => {
-          ink.percentage = (ink.percentage / totalPercentage) * 100;
+        updatedRecipe.inks?.forEach((ink: any) => {
+          ink.ratio = (ink.ratio / totalPercentage) * 100;
         });
       }
 
@@ -474,9 +468,9 @@ function ProfessionalApp() {
       setCurrentRecipe(updatedRecipe);
 
       // Update in allRecipes
-      if (updatedRecipe.id) {
-        setAllRecipes((prev) => prev.map((r) => (r.id === updatedRecipe.id ? updatedRecipe : r)));
-      }
+      // if (updatedRecipe.id) {
+      //   setAllRecipes((prev) => prev.map((r) => (r.id === updatedRecipe.id ? updatedRecipe : r)));
+      // }
 
       // Save to correction history
       const correctionEntry = {
@@ -511,7 +505,7 @@ function ProfessionalApp() {
     setIsCalculating(true);
 
     // Clear previous recipes
-    setAllRecipes([]);
+    // setAllRecipes([]);
     setActiveRecipeId(null);
 
     try {
@@ -534,7 +528,7 @@ function ProfessionalApp() {
       };
 
       setCurrentRecipe(recipeWithId);
-      setAllRecipes((prev) => [...prev, recipeWithId]);
+      // setAllRecipes((prev) => [...prev, recipeWithId]);
 
       // 최적화된 레시피 계산 (모든 잉크 사용)
       if (calculateOptimizedRecipe) {
@@ -547,7 +541,7 @@ function ProfessionalApp() {
             use70: true,
             use40: true,
             maxResults: maxOptimizedRecipes,
-            substrateLab: printSettings.substrateLab, // 원단 Lab 값 전달
+            // substrateLab: printSettings.substrateLab, // 원단 Lab 값 전달
           });
           console.log('Optimized recipes:', optimized);
           // 배열인 경우 그대로 저장, 단일 객체인 경우 배열로 변환
@@ -576,7 +570,7 @@ function ProfessionalApp() {
           }
 
           setOptimizedRecipes(optimizedWithIds);
-          setAllRecipes((prev) => [...prev, ...optimizedWithIds]);
+          // setAllRecipes((prev) => [...prev, ...optimizedWithIds]);
         } catch (error) {
           console.error('Optimized recipe calculation error:', error);
           setOptimizedRecipes([]);
@@ -615,9 +609,6 @@ function ProfessionalApp() {
 
   // Convert RGB to CMYK
   const cmyk = rgbToCmyk(rgb.r, rgb.g, rgb.b);
-
-  // Calculate LRV (Light Reflectance Value)
-  const lrv = ((targetColor.L / 100) ** 2 * 100).toFixed(1);
 
   // Get ink database
   const inkDB = getInkDatabase();
@@ -1709,7 +1700,6 @@ function ProfessionalApp() {
         currentRecipe={currentRecipe}
         optimizedRecipes={optimizedRecipes}
         inkDB={inkDB}
-        onOpenCorrectionModal={() => setShowCorrectionModal(true)}
         activeRecipeId={activeRecipeId}
         onSelectRecipe={selectRecipeForWork}
         onUpdateRecipeStatus={updateRecipeStatus}
@@ -1778,7 +1768,7 @@ function ProfessionalApp() {
       setShowHistoryModal={setShowHistoryModal}
       setTargetColor={setTargetColor}
       setCurrentRecipe={setCurrentRecipe}
-      setCurrentPage={setCurrentPage}
+      setCurrentPage={(page: string) => setCurrentPage(page as PageView)}
     />
   );
 
@@ -1923,7 +1913,7 @@ function ProfessionalApp() {
         onClose={() => setShowCorrectionModal(false)}
         targetColor={targetColor}
         currentRecipe={currentRecipe}
-        availableInks={inkDB}
+        availableInks={inkDB.getAllInks()}
         onApplyCorrection={handleApplyCorrection}
       />
     </div>

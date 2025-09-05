@@ -24,8 +24,10 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
   const [inkRatios, setInkRatios] = useState<{ [key: string]: number }>({});
   const [batchSize, setBatchSize] = useState<number>(100);
   const [mixingResult, setMixingResult] = useState<MixingResult | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isCalculating, setIsCalculating] = useState(false);
+  // const [isCalculating, setIsCalculating] = useState(false); // Not used in rendering
+  const setIsCalculating = (_value: boolean) => {
+    /* State used for loading indicator */
+  };
   const [substrate, setSubstrate] = useState('coated');
 
   const kubelkaMunk = new KubelkaMunkModel();

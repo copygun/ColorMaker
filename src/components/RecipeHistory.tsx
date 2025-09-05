@@ -135,7 +135,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   };
 
   const compareSelected = () => {
-    const recipes = history.filter((r) => selectedRecipes.has(r.id));
+    const recipes = history.filter((r) => r.id && selectedRecipes.has(r.id));
     if (recipes.length >= 2 && onCompareRecipes) {
       onCompareRecipes(recipes);
     }
@@ -192,12 +192,15 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
         case 'name':
           return (a.name || '').localeCompare(b.name || '');
         case 'date':
-        default:
-          return (b.timestamp || 0) - (a.timestamp || 0);
+        default: {
+          const bTime = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+          const aTime = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+          return bTime - aTime;
+        }
       }
     });
 
-  const formatDate = (timestamp?: number) => {
+  const formatDate = (timestamp?: string | number) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
     return (
@@ -305,19 +308,19 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
           filteredHistory.map((recipe) => (
             <div
               key={recipe.id}
-              className={`history-item ${selectedRecipes.has(recipe.id) ? 'selected' : ''}`}
+              className={`history-item ${recipe.id && selectedRecipes.has(recipe.id) ? 'selected' : ''}`}
             >
               <div className="item-header">
                 <input
                   type="checkbox"
-                  checked={selectedRecipes.has(recipe.id)}
-                  onChange={() => toggleSelection(recipe.id)}
+                  checked={recipe.id ? selectedRecipes.has(recipe.id) : false}
+                  onChange={() => recipe.id && toggleSelection(recipe.id)}
                   className="item-checkbox"
                 />
 
                 <div className="item-main" onClick={() => onSelectRecipe?.(recipe)}>
                   <h4 className="item-name">
-                    {recipe.name || `레시피 #${recipe.id.substring(0, 8)}`}
+                    {recipe.name || `레시피 #${recipe.id?.substring(0, 8) || ''}`}
                   </h4>
 
                   <div className="item-info">
@@ -344,7 +347,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setShowDetails(showDetails === recipe.id ? null : recipe.id);
+                      setShowDetails(showDetails === recipe.id ? null : recipe.id || null);
                     }}
                     className="btn-details"
                     title="상세 정보"
@@ -355,7 +358,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      deleteRecipe(recipe.id);
+                      recipe.id && deleteRecipe(recipe.id);
                     }}
                     className="btn-delete"
                     title="삭제"
@@ -374,14 +377,14 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                       <div
                         className="color-swatch"
                         style={{
-                          backgroundColor: recipe.targetColor?.hex || '#ccc',
+                          backgroundColor: `lab(${recipe.targetColor?.L || 50}% ${recipe.targetColor?.a || 0} ${recipe.targetColor?.b || 0})`,
                           width: '40px',
                           height: '40px',
                           borderRadius: '4px',
                           border: '1px solid #ddd',
                         }}
                       />
-                      <span>{formatColor(recipe.targetColor?.lab)}</span>
+                      <span>{formatColor(recipe.targetColor)}</span>
                     </div>
                   </div>
 
@@ -390,7 +393,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                     <div className="detail-inks">
                       {recipe.inks?.map((ink, idx) => (
                         <div key={idx} className="ink-item">
-                          <span className="ink-name">{ink.name}</span>
+                          <span className="ink-name">{ink.inkId}</span>
                           <span className="ink-ratio">{ink.ratio.toFixed(1)}%</span>
                         </div>
                       ))}
@@ -437,7 +440,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
         )}
       </div>
 
-      <style jsx>{`
+      <style>{`
         .recipe-history {
           padding: 20px;
           background: #fff;

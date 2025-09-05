@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { LabColor } from '../types';
 import { pantoneDB } from '../../core/pantoneDatabase.js';
 
@@ -11,7 +11,7 @@ interface ColorInputProps {
 
 const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, labToRgb }) => {
   const [localValue, setLocalValue] = useState(value);
-  const [isValid, setIsValid] = useState(true);
+  // const [isValid, setIsValid] = useState(true); // Not used in rendering
   const [pantoneInput, setPantoneInput] = useState('');
   const [closestPantones, setClosestPantones] = useState<any[]>([]);
   const [showPantoneSearch, setShowPantoneSearch] = useState(false);
@@ -257,8 +257,9 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
     setLocalValue(updated);
 
     if (onValidate) {
-      const valid = onValidate(updated);
-      setIsValid(valid);
+      // const valid = onValidate(updated);
+      // setIsValid(valid); // Not used in rendering
+      onValidate(updated);
     }
 
     onChange(updated);
@@ -830,10 +831,6 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
                     border: '2px solid #cbd5e0',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
-                    ':hover': {
-                      transform: 'scale(1.1)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    },
                   }}
                   title={color.name}
                 />

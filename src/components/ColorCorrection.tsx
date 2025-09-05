@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import type { LabColor, Recipe } from '../types';
+import type { LabColor, Recipe, CorrectionSuggestion } from '../types';
 
 interface CorrectionHistory {
   id: string;
@@ -9,17 +9,6 @@ interface CorrectionHistory {
   deltaE: number;
   corrections: CorrectionSuggestion[];
   status: 'pending' | 'applied' | 'success' | 'failed';
-}
-
-interface CorrectionSuggestion {
-  inkId: string;
-  name: string;
-  addAmount: number;
-  expectedImpact: {
-    dL: number;
-    da: number;
-    db: number;
-  };
 }
 
 interface ColorCorrectionProps {
@@ -123,7 +112,12 @@ const ColorCorrection: React.FC<ColorCorrectionProps> = ({
           originalRecipe.inks,
           analysis.feasibility.correctionInks,
         );
-        setSuggestedCorrections(corrections);
+        // Ensure each correction has an id
+        const correctionsWithId = corrections.map((c: any, index: number) => ({
+          ...c,
+          id: c.id || `correction-${index}`,
+        }));
+        setSuggestedCorrections(correctionsWithId);
 
         // 보정 적용 시 예측 결과 계산
         const predictedLab = correctionEngine.predictCorrectedColor(actualColor, corrections);
@@ -384,7 +378,7 @@ const ColorCorrection: React.FC<ColorCorrectionProps> = ({
           </div>
         </div>
       )}
-      <style jsx>{`
+      <style>{`
         .special-ink-recommendation {
           margin-bottom: 15px;
           padding: 12px;

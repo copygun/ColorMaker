@@ -33,7 +33,6 @@ const PrintResultTracker: React.FC<PrintResultTrackerProps> = ({
     notes: '',
   });
 
-  const [showHistory, setShowHistory] = useState(false);
   const [recentResults, setRecentResults] = useState<PrintResult[]>([]);
   const [statistics, setStatistics] = useState<any>(null);
   const [activeProfile, setActiveProfile] = useState<string | null>(null);
@@ -82,8 +81,8 @@ const PrintResultTracker: React.FC<PrintResultTrackerProps> = ({
 
     const deltaE = calculateDeltaE(predictedLab, actualLab);
 
-    const result = learningSystem.savePrintResult({
-      recipeId: currentRecipe.id,
+    learningSystem.savePrintResult({
+      recipeId: currentRecipe.id || '',
       recipeName: currentRecipe.name,
       predictedLab: predictedLab,
       actualLab: actualLab,

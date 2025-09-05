@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { OptimizedMixingEngine } from '../../core/optimizedMixingEngine.js';
+import { OptimizedMixingEngine } from '../../core/OptimizedMixingEngine.js';
 import { baseInks } from '../../core/inkDatabase.js';
 import type { LabColor } from '../types';
 

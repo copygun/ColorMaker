@@ -75,6 +75,7 @@ export interface Recipe {
   recipe?: Recipe; // ProfessionalApp.tsx에서 사용 (중첩)
   totalAmount?: number; // PrintResultTracker에서 사용
   metadata?: any; // RecipeDisplay에서 사용
+  timestamp?: string; // RecipeHistory에서 사용
 }
 
 export interface DeltaEWeights {

@@ -11,6 +11,7 @@ import type {
   DeltaEWeights,
   DeltaEMethod,
   FeatureFlags,
+  CalculationOptions,
 } from '../types';
 
 // 코어 모듈 import
@@ -18,7 +19,7 @@ import { ColorScience } from '../../core/colorScience.js';
 import { inkDB } from '../../core/inkDatabase.js';
 import { MixingEngine } from '../../core/mixingEngine.js';
 import { AdvancedMixingEngine } from '../../core/advancedMixingEngine.js';
-import { OptimizedMixingEngine } from '../../core/optimizedMixingEngine.js';
+import { OptimizedMixingEngine } from '../../core/OptimizedMixingEngine.js';
 import { learningSystem } from '../services/LocalLearningSystem';
 
 interface UseColorCalculationOptions {
@@ -125,7 +126,7 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
       console.log('calculateOptimizedRecipe called with:', { targetColor, options });
 
       // 기본 옵션 설정
-      const defaultOptions = {
+      const defaultOptions: CalculationOptions = {
         maxInks: 5, // 4에서 5로 증가하여 더 정확한 매칭 가능
         includeWhite: true,
         use100: true,
@@ -134,7 +135,7 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
         costWeight: 0.1, // 비용 가중치를 낮춰서 정확도 우선
         maxResults: 5, // 기본값 5개
       };
-      const finalOptions = { ...defaultOptions, ...options };
+      const finalOptions: CalculationOptions = { ...defaultOptions, ...options };
 
       // 선택된 농도들
       const concentrations = [];
@@ -179,8 +180,8 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
             if (parsed[ink.id]) {
               const newInk = { ...ink, concentrations: { ...ink.concentrations } };
               Object.keys(parsed[ink.id]).forEach((concentration) => {
-                const conc = parseInt(concentration);
-                if (parsed[ink.id][conc]) {
+                const conc = parseInt(concentration) as 100 | 70 | 40;
+                if (parsed[ink.id]?.[conc]) {
                   newInk.concentrations[conc] = parsed[ink.id][conc];
                 }
               });

@@ -48,7 +48,6 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
   const [rgb, setRgb] = useState({ r: 0, g: 0, b: 0 });
   const [hexInput, setHexInput] = useState('');
   const [isValid, setIsValid] = useState(true);
-  const [isDragging, setIsDragging] = useState<'L' | 'a' | 'b' | null>(null);
 
   // Update RGB preview
   useEffect(() => {

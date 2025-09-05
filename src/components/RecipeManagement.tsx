@@ -12,7 +12,7 @@ interface RecipeManagementProps {
 
 const RecipeManagement: React.FC<RecipeManagementProps> = ({
   recipeHistory,
-  showHistoryModal,
+  showHistoryModal: _showHistoryModal, // Prefixed with _ to indicate unused
   setShowHistoryModal,
   setTargetColor,
   setCurrentRecipe,

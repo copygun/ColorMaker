@@ -4,7 +4,7 @@
  * 2024 최신 기술 통합
  */
 
-import { OptimizedMixingEngine } from './optimizedMixingEngine.js';
+import { OptimizedMixingEngine } from './OptimizedMixingEngine.js';
 import { FluorescentInkHandler } from './fluorestcentInks.js';
 import { AdvancedColorModel } from './advancedColorModel.js';
 import { ColorScience } from './colorScience.js';
