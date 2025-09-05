@@ -14,18 +14,18 @@ const InkEditor: React.FC<InkEditorProps> = ({ ink, onSave, onClose }) => {
   const handleLabChange = (
     concentration: '100' | '70' | '40',
     component: 'L' | 'a' | 'b',
-    value: string
+    value: string,
   ) => {
     const numValue = parseFloat(value) || 0;
-    setEditedInk(prev => ({
+    setEditedInk((prev) => ({
       ...prev,
       concentrations: {
         ...prev.concentrations,
         [concentration]: {
           ...prev.concentrations[concentration],
-          [component]: numValue
-        }
-      }
+          [component]: numValue,
+        },
+      },
     }));
   };
 
@@ -43,7 +43,9 @@ const InkEditor: React.FC<InkEditorProps> = ({ ink, onSave, onClose }) => {
       <div className="ink-editor">
         <div className="editor-header">
           <h3>{ink.name} 잉크 편집</h3>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <button className="close-btn" onClick={onClose}>
+            ×
+          </button>
         </div>
 
         <div className="editor-body">
@@ -114,22 +116,22 @@ const InkEditor: React.FC<InkEditorProps> = ({ ink, onSave, onClose }) => {
           <div className="color-preview-section">
             <h4>색상 미리보기</h4>
             <div className="preview-grid">
-              {(['100', '70', '40'] as const).map(conc => {
+              {(['100', '70', '40'] as const).map((conc) => {
                 const labValues = editedInk.concentrations[conc];
                 if (!labValues) return null;
-                
+
                 return (
                   <div key={conc} className="preview-item">
-                    <div 
+                    <div
                       className="color-swatch"
                       style={{
-                        backgroundColor: `lab(${labValues.L}% ${labValues.a} ${labValues.b})`
+                        backgroundColor: `lab(${labValues.L}% ${labValues.a} ${labValues.b})`,
                       }}
                     />
                     <div className="preview-label">{conc}%</div>
                     <div className="lab-text">
-                      L:{labValues.L.toFixed(1)} 
-                      a:{labValues.a.toFixed(1)} 
+                      L:{labValues.L.toFixed(1)}
+                      a:{labValues.a.toFixed(1)}
                       b:{labValues.b.toFixed(1)}
                     </div>
                   </div>

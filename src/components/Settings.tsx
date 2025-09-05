@@ -13,7 +13,7 @@ const Settings: React.FC<SettingsProps> = ({
   deltaEMethod,
   setDeltaEMethod,
   setRecipeHistory,
-  onShowInfo
+  onShowInfo,
 }) => {
   return (
     <div className="pro-card">
@@ -30,7 +30,7 @@ const Settings: React.FC<SettingsProps> = ({
             <div className="data-grid">
               <div className="pro-input-group">
                 <label className="pro-label">제조사 선택</label>
-                <select 
+                <select
                   className="pro-input"
                   value={manufacturerDB.currentManufacturer}
                   onChange={(e) => {
@@ -45,7 +45,7 @@ const Settings: React.FC<SettingsProps> = ({
                   ))}
                 </select>
               </div>
-              
+
               <div className="value-box">
                 <div className="value-label">현재 제조사 정보</div>
                 <div className="value-content" style={{ fontSize: '1rem' }}>
@@ -60,7 +60,7 @@ const Settings: React.FC<SettingsProps> = ({
               </div>
             </div>
           </div>
-          
+
           {/* Delta E Settings */}
           <div>
             <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>
@@ -69,7 +69,7 @@ const Settings: React.FC<SettingsProps> = ({
             <div className="data-grid">
               <div className="pro-input-group">
                 <label className="pro-label">계산 방법</label>
-                <select 
+                <select
                   className="pro-input"
                   value={deltaEMethod}
                   onChange={(e) => setDeltaEMethod(e.target.value as any)}
@@ -106,17 +106,11 @@ const Settings: React.FC<SettingsProps> = ({
 
           {/* Data Management */}
           <div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>
-              데이터 관리
-            </h3>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '12px' }}>데이터 관리</h3>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="pro-button pro-button-secondary">
-                레시피 내보내기
-              </button>
-              <button className="pro-button pro-button-secondary">
-                레시피 가져오기
-              </button>
-              <button 
+              <button className="pro-button pro-button-secondary">레시피 내보내기</button>
+              <button className="pro-button pro-button-secondary">레시피 가져오기</button>
+              <button
                 className="pro-button pro-button-secondary"
                 style={{ marginLeft: 'auto', borderColor: '#dc3545', color: '#dc3545' }}
                 onClick={() => {

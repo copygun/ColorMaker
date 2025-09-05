@@ -18,8 +18,8 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
     concentrations: {
       100: { L: 50, a: 0, b: 0 },
       70: { L: 65, a: 0, b: 0 },
-      40: { L: 75, a: 0, b: 0 }
-    }
+      40: { L: 75, a: 0, b: 0 },
+    },
   });
 
   useEffect(() => {
@@ -33,21 +33,21 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
     if (inkIndex !== -1) {
       inkDatabase.baseInks[inkIndex] = updatedInk;
     } else {
-      const metallicIndex = inkDatabase.metallicInks.findIndex((ink: Ink) => ink.id === updatedInk.id);
+      const metallicIndex = inkDatabase.metallicInks.findIndex(
+        (ink: Ink) => ink.id === updatedInk.id,
+      );
       if (metallicIndex !== -1) {
         inkDatabase.metallicInks[metallicIndex] = updatedInk;
       }
     }
 
     // 로컬 상태 업데이트
-    setInks(prevInks => 
-      prevInks.map(ink => ink.id === updatedInk.id ? updatedInk : ink)
-    );
+    setInks((prevInks) => prevInks.map((ink) => (ink.id === updatedInk.id ? updatedInk : ink)));
 
     // LocalStorage에 저장
     const customInks = {
       baseInks: inkDatabase.baseInks,
-      metallicInks: inkDatabase.metallicInks
+      metallicInks: inkDatabase.metallicInks,
     };
     localStorage.setItem('customInkValues', JSON.stringify(customInks));
 
@@ -63,7 +63,7 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
     const newInk: Ink = {
       ...customInk,
       id: `custom_${Date.now()}`,
-      type: 'custom'
+      type: 'custom',
     };
 
     // 데이터베이스에 추가
@@ -73,17 +73,17 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
       // 직접 배열에 추가
       inkDatabase.baseInks.push(newInk);
     }
-    
+
     // 로컬 상태 업데이트
-    setInks(prev => [...prev, newInk]);
-    
+    setInks((prev) => [...prev, newInk]);
+
     // LocalStorage에 저장
     const customInks = {
       baseInks: inkDatabase.baseInks,
-      metallicInks: inkDatabase.metallicInks
+      metallicInks: inkDatabase.metallicInks,
     };
     localStorage.setItem('customInkValues', JSON.stringify(customInks));
-    
+
     // 초기화 및 닫기
     setCustomInk({
       id: '',
@@ -92,11 +92,11 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
       concentrations: {
         100: { L: 50, a: 0, b: 0 },
         70: { L: 65, a: 0, b: 0 },
-        40: { L: 75, a: 0, b: 0 }
-      }
+        40: { L: 75, a: 0, b: 0 },
+      },
     });
     setShowAddCustom(false);
-    
+
     // 부모 컴포넌트에 알림
     if (onInkUpdate) {
       onInkUpdate();
@@ -124,14 +124,16 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
         if (imported.baseInks) {
           // 데이터베이스 업데이트
           inkDatabase.baseInks = imported.baseInks.filter((ink: Ink) => ink.type !== 'metallic');
-          inkDatabase.metallicInks = imported.baseInks.filter((ink: Ink) => ink.type === 'metallic');
-          
+          inkDatabase.metallicInks = imported.baseInks.filter(
+            (ink: Ink) => ink.type === 'metallic',
+          );
+
           // 로컬 상태 업데이트
           setInks(imported.baseInks);
-          
+
           // LocalStorage 저장
           localStorage.setItem('customInkValues', JSON.stringify(imported));
-          
+
           alert('잉크 데이터를 성공적으로 가져왔습니다.');
         }
       } catch (error) {
@@ -162,8 +164,8 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
           </button>
           <label className="btn btn-small">
             📤 가져오기
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept=".json"
               onChange={handleImportInks}
               style={{ display: 'none' }}
@@ -189,58 +191,62 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
             </tr>
           </thead>
           <tbody>
-            {inks.map(ink => (
+            {inks.map((ink) => (
               <tr key={ink.id}>
                 <td className="ink-name">{ink.name}</td>
                 <td>
                   <span className={`type-badge ${ink.type}`}>{ink.type}</span>
                 </td>
                 <td className="lab-values">
-                  L:{ink.concentrations[100].L.toFixed(1)} 
-                  a:{ink.concentrations[100].a.toFixed(1)} 
+                  L:{ink.concentrations[100].L.toFixed(1)}
+                  a:{ink.concentrations[100].a.toFixed(1)}
                   b:{ink.concentrations[100].b.toFixed(1)}
                 </td>
                 <td className="lab-values">
                   {ink.concentrations[70] ? (
                     <>
-                      L:{ink.concentrations[70].L.toFixed(1)} 
-                      a:{ink.concentrations[70].a.toFixed(1)} 
+                      L:{ink.concentrations[70].L.toFixed(1)}
+                      a:{ink.concentrations[70].a.toFixed(1)}
                       b:{ink.concentrations[70].b.toFixed(1)}
                     </>
-                  ) : '-'}
+                  ) : (
+                    '-'
+                  )}
                 </td>
                 <td className="lab-values">
                   {ink.concentrations[40] ? (
                     <>
-                      L:{ink.concentrations[40].L.toFixed(1)} 
-                      a:{ink.concentrations[40].a.toFixed(1)} 
+                      L:{ink.concentrations[40].L.toFixed(1)}
+                      a:{ink.concentrations[40].a.toFixed(1)}
                       b:{ink.concentrations[40].b.toFixed(1)}
                     </>
-                  ) : '-'}
+                  ) : (
+                    '-'
+                  )}
                 </td>
                 <td>
                   <div className="color-samples">
-                    <div 
+                    <div
                       className="color-sample"
                       style={{
-                        backgroundColor: `lab(${ink.concentrations[100].L}% ${ink.concentrations[100].a} ${ink.concentrations[100].b})`
+                        backgroundColor: `lab(${ink.concentrations[100].L}% ${ink.concentrations[100].a} ${ink.concentrations[100].b})`,
                       }}
                       title="100%"
                     />
                     {ink.concentrations[70] && (
-                      <div 
+                      <div
                         className="color-sample"
                         style={{
-                          backgroundColor: `lab(${ink.concentrations[70].L}% ${ink.concentrations[70].a} ${ink.concentrations[70].b})`
+                          backgroundColor: `lab(${ink.concentrations[70].L}% ${ink.concentrations[70].a} ${ink.concentrations[70].b})`,
                         }}
                         title="70%"
                       />
                     )}
                     {ink.concentrations[40] && (
-                      <div 
+                      <div
                         className="color-sample"
                         style={{
-                          backgroundColor: `lab(${ink.concentrations[40].L}% ${ink.concentrations[40].a} ${ink.concentrations[40].b})`
+                          backgroundColor: `lab(${ink.concentrations[40].L}% ${ink.concentrations[40].a} ${ink.concentrations[40].b})`,
                         }}
                         title="40%"
                       />
@@ -248,10 +254,7 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
                   </div>
                 </td>
                 <td>
-                  <button 
-                    className="btn btn-small btn-edit"
-                    onClick={() => setEditingInk(ink)}
-                  >
+                  <button className="btn btn-small btn-edit" onClick={() => setEditingInk(ink)}>
                     ✏️ 편집
                   </button>
                 </td>
@@ -271,11 +274,11 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
               <input
                 type="text"
                 value={customInk.name}
-                onChange={(e) => setCustomInk(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setCustomInk((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="예: Special Red"
               />
             </div>
-            
+
             <div className="concentration-section">
               <h4>100% 농도</h4>
               <div className="lab-inputs-row">
@@ -283,49 +286,52 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
                   type="number"
                   placeholder="L*"
                   value={customInk.concentrations[100].L}
-                  onChange={(e) => setCustomInk(prev => ({
-                    ...prev,
-                    concentrations: {
-                      ...prev.concentrations,
-                      100: { ...prev.concentrations[100], L: parseFloat(e.target.value) || 0 }
-                    }
-                  }))}
+                  onChange={(e) =>
+                    setCustomInk((prev) => ({
+                      ...prev,
+                      concentrations: {
+                        ...prev.concentrations,
+                        100: { ...prev.concentrations[100], L: parseFloat(e.target.value) || 0 },
+                      },
+                    }))
+                  }
                 />
                 <input
                   type="number"
                   placeholder="a*"
                   value={customInk.concentrations[100].a}
-                  onChange={(e) => setCustomInk(prev => ({
-                    ...prev,
-                    concentrations: {
-                      ...prev.concentrations,
-                      100: { ...prev.concentrations[100], a: parseFloat(e.target.value) || 0 }
-                    }
-                  }))}
+                  onChange={(e) =>
+                    setCustomInk((prev) => ({
+                      ...prev,
+                      concentrations: {
+                        ...prev.concentrations,
+                        100: { ...prev.concentrations[100], a: parseFloat(e.target.value) || 0 },
+                      },
+                    }))
+                  }
                 />
                 <input
                   type="number"
                   placeholder="b*"
                   value={customInk.concentrations[100].b}
-                  onChange={(e) => setCustomInk(prev => ({
-                    ...prev,
-                    concentrations: {
-                      ...prev.concentrations,
-                      100: { ...prev.concentrations[100], b: parseFloat(e.target.value) || 0 }
-                    }
-                  }))}
+                  onChange={(e) =>
+                    setCustomInk((prev) => ({
+                      ...prev,
+                      concentrations: {
+                        ...prev.concentrations,
+                        100: { ...prev.concentrations[100], b: parseFloat(e.target.value) || 0 },
+                      },
+                    }))
+                  }
                 />
               </div>
             </div>
 
             <div className="form-actions">
-              <button 
-                className="btn btn-cancel"
-                onClick={() => setShowAddCustom(false)}
-              >
+              <button className="btn btn-cancel" onClick={() => setShowAddCustom(false)}>
                 취소
               </button>
-              <button 
+              <button
                 className="btn btn-primary"
                 onClick={handleAddCustomInk}
                 disabled={!customInk.name}
@@ -339,11 +345,7 @@ const InkManager: React.FC<InkManagerProps> = ({ inkDatabase, onInkUpdate }) => 
 
       {/* 잉크 편집 모달 */}
       {editingInk && (
-        <InkEditor
-          ink={editingInk}
-          onSave={handleInkSave}
-          onClose={() => setEditingInk(null)}
-        />
+        <InkEditor ink={editingInk} onSave={handleInkSave} onClose={() => setEditingInk(null)} />
       )}
     </div>
   );

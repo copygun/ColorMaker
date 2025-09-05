@@ -14,7 +14,7 @@ const Certificate: React.FC<CertificateProps> = ({
   targetColor,
   inkDatabase,
   show,
-  onClose
+  onClose,
 }) => {
   // 인쇄용 성적서 생성
   const handlePrint = useCallback(() => {
@@ -25,7 +25,7 @@ const Certificate: React.FC<CertificateProps> = ({
   const handleDownload = useCallback(() => {
     const content = document.getElementById('certificate-content');
     if (!content) return;
-    
+
     // HTML을 텍스트로 변환
     const text = content.innerText;
     const blob = new Blob([text], { type: 'text/plain' });
@@ -45,12 +45,14 @@ const Certificate: React.FC<CertificateProps> = ({
   return (
     <div className="certificate-modal">
       <div className="certificate-container" id="certificate-content">
-        <button className="close-btn" onClick={onClose}>✕</button>
-        
+        <button className="close-btn" onClick={onClose}>
+          ✕
+        </button>
         <div className="certificate-header">
           <h1>색상 매칭 성적서</h1>
           <p className="subtitle">Color Matching Certificate</p>
-        </div>        <div className="certificate-info">
+        </div>{' '}
+        <div className="certificate-info">
           <div className="info-row">
             <span className="label">발행일:</span>
             <span className="value">{currentDate}</span>
@@ -64,7 +66,6 @@ const Certificate: React.FC<CertificateProps> = ({
             <span className="value">원라벨 컬러연구소</span>
           </div>
         </div>
-
         <div className="certificate-section">
           <h2>목표 색상 정보</h2>
           <div className="color-info">
@@ -75,7 +76,6 @@ const Certificate: React.FC<CertificateProps> = ({
             </div>
           </div>
         </div>
-
         <div className="certificate-section">
           <h2>계산된 레시피</h2>
           <table className="recipe-table">
@@ -96,16 +96,22 @@ const Certificate: React.FC<CertificateProps> = ({
               ))}
             </tbody>
           </table>
-        </div>        <div className="certificate-section">
+        </div>{' '}
+        <div className="certificate-section">
           <h2>색상 매칭 결과</h2>
           <div className="matching-result">
             <div className="result-row">
               <span className="label">혼합 색상:</span>
-              <span>L*: {recipe.mixed.L.toFixed(2)}, a*: {recipe.mixed.a.toFixed(2)}, b*: {recipe.mixed.b.toFixed(2)}</span>
+              <span>
+                L*: {recipe.mixed.L.toFixed(2)}, a*: {recipe.mixed.a.toFixed(2)}, b*:{' '}
+                {recipe.mixed.b.toFixed(2)}
+              </span>
             </div>
             <div className="result-row">
               <span className="label">Delta E 2000:</span>
-              <span className={`delta-e ${recipe.deltaE < 1 ? 'excellent' : recipe.deltaE < 2 ? 'good' : 'fair'}`}>
+              <span
+                className={`delta-e ${recipe.deltaE < 1 ? 'excellent' : recipe.deltaE < 2 ? 'good' : 'fair'}`}
+              >
                 {recipe.deltaE.toFixed(3)}
               </span>
             </div>
@@ -119,7 +125,6 @@ const Certificate: React.FC<CertificateProps> = ({
             </div>
           </div>
         </div>
-
         <div className="certificate-section">
           <h2>품질 평가</h2>
           <div className="quality-assessment">
@@ -129,28 +134,20 @@ const Certificate: React.FC<CertificateProps> = ({
               </div>
             )}
             {recipe.deltaE >= 1 && recipe.deltaE < 2 && (
-              <div className="assessment good">
-                ✓ 양호 - 숙련된 관찰자만 구별 가능한 수준
-              </div>
+              <div className="assessment good">✓ 양호 - 숙련된 관찰자만 구별 가능한 수준</div>
             )}
             {recipe.deltaE >= 2 && recipe.deltaE < 5 && (
-              <div className="assessment fair">
-                ○ 보통 - 일반인도 구별 가능하나 허용 범위 내
-              </div>
+              <div className="assessment fair">○ 보통 - 일반인도 구별 가능하나 허용 범위 내</div>
             )}
             {recipe.deltaE >= 5 && (
-              <div className="assessment poor">
-                △ 개선필요 - 명확한 색상 차이 존재
-              </div>
+              <div className="assessment poor">△ 개선필요 - 명확한 색상 차이 존재</div>
             )}
           </div>
         </div>
-
         <div className="certificate-footer">
           <p>본 성적서는 원라벨 컬러연구소의 표준 측정 방법에 따라 작성되었습니다.</p>
           <p>측정 조건: D65 표준광원, 2° 관찰자 각도</p>
         </div>
-
         <div className="certificate-actions no-print">
           <button className="btn btn-primary" onClick={handlePrint}>
             🖨️ 인쇄

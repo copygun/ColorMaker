@@ -27,34 +27,34 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isCalculating, setIsCalculating] = useState(false);
   const [substrate, setSubstrate] = useState('coated');
-  
+
   const kubelkaMunk = new KubelkaMunkModel();
 
   // 잉크 선택 핸들러
   const handleInkToggle = (inkId: string) => {
     if (selectedInks.includes(inkId)) {
-      setSelectedInks(prev => prev.filter(id => id !== inkId));
+      setSelectedInks((prev) => prev.filter((id) => id !== inkId));
       const newRatios = { ...inkRatios };
       delete newRatios[inkId];
       setInkRatios(newRatios);
     } else {
-      setSelectedInks(prev => [...prev, inkId]);
-      setInkRatios(prev => ({ ...prev, [inkId]: 25 }));
+      setSelectedInks((prev) => [...prev, inkId]);
+      setInkRatios((prev) => ({ ...prev, [inkId]: 25 }));
     }
   };
 
   // 비율 변경 핸들러
   const handleRatioChange = (inkId: string, value: number) => {
-    setInkRatios(prev => ({ ...prev, [inkId]: value }));
+    setInkRatios((prev) => ({ ...prev, [inkId]: value }));
   };
 
   // 비율 정규화
   const normalizeRatios = () => {
     const total = Object.values(inkRatios).reduce((sum, ratio) => sum + ratio, 0);
     if (total === 0) return;
-    
+
     const normalized: { [key: string]: number } = {};
-    Object.keys(inkRatios).forEach(inkId => {
+    Object.keys(inkRatios).forEach((inkId) => {
       normalized[inkId] = (inkRatios[inkId] / total) * 100;
     });
     setInkRatios(normalized);
@@ -63,60 +63,67 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
   // 혼합 색상 계산
   const calculateMixing = useCallback(() => {
     if (selectedInks.length === 0) return;
-    
+
     setIsCalculating(true);
-    
+
     try {
       // 선택된 잉크 데이터 수집
       const inks: Ink[] = [];
       const concentrations: number[] = [];
-      
-      selectedInks.forEach(inkId => {
-        const ink = [...inkDatabase.baseInks, ...inkDatabase.metallicInks]
-          .find((i: Ink) => i.id === inkId);
+
+      selectedInks.forEach((inkId) => {
+        const ink = [...inkDatabase.baseInks, ...inkDatabase.metallicInks].find(
+          (i: Ink) => i.id === inkId,
+        );
         if (ink) {
           inks.push(ink);
           concentrations.push((inkRatios[inkId] || 0) / 100);
         }
       });
-      
+
       // Kubelka-Munk 모델로 혼합
       const mixedColor = kubelkaMunk.mixInks(
-        inks.map(ink => ({ ...ink.concentrations[100], type: ink.type })),
+        inks.map((ink) => ({ ...ink.concentrations[100], type: ink.type })),
         concentrations,
-        substrate
+        substrate,
       );
-      
+
       // Delta E 계산 (타겟 색상이 있는 경우)
       let deltaE = 0;
       if (targetColor) {
         deltaE = ColorScience.calculateDeltaE00(
-          targetColor.L, targetColor.a, targetColor.b,
-          mixedColor.L, mixedColor.a, mixedColor.b
+          targetColor.L,
+          targetColor.a,
+          targetColor.b,
+          mixedColor.L,
+          mixedColor.a,
+          mixedColor.b,
         );
       }
-      
+
       // 중량 계산
-      const inkDetails = selectedInks.map(inkId => {
-        const ink = [...inkDatabase.baseInks, ...inkDatabase.metallicInks]
-          .find((i: Ink) => i.id === inkId);
-        const percentage = inkRatios[inkId] || 0;
-        const grams = (batchSize * percentage) / 100;
-        
-        return {
-          ink: ink!,
-          percentage,
-          grams
-        };
-      }).filter(item => item.ink);
-      
+      const inkDetails = selectedInks
+        .map((inkId) => {
+          const ink = [...inkDatabase.baseInks, ...inkDatabase.metallicInks].find(
+            (i: Ink) => i.id === inkId,
+          );
+          const percentage = inkRatios[inkId] || 0;
+          const grams = (batchSize * percentage) / 100;
+
+          return {
+            ink: ink!,
+            percentage,
+            grams,
+          };
+        })
+        .filter((item) => item.ink);
+
       setMixingResult({
         color: mixedColor,
         deltaE,
         inks: inkDetails,
-        totalWeight: batchSize
+        totalWeight: batchSize,
       });
-      
     } catch (error) {
       console.error('Mixing calculation error:', error);
     } finally {
@@ -130,56 +137,62 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
       alert('타겟 색상과 잉크를 선택해주세요.');
       return;
     }
-    
+
     setIsCalculating(true);
-    
+
     try {
       // 선택된 잉크로 최적화 실행
-      const inks = selectedInks.map(inkId => {
-        return [...inkDatabase.baseInks, ...inkDatabase.metallicInks]
-          .find((i: Ink) => i.id === inkId);
-      }).filter(Boolean);
-      
+      const inks = selectedInks
+        .map((inkId) => {
+          return [...inkDatabase.baseInks, ...inkDatabase.metallicInks].find(
+            (i: Ink) => i.id === inkId,
+          );
+        })
+        .filter(Boolean);
+
       // 간단한 최적화 알고리즘 (실제로는 더 복잡한 알고리즘 필요)
       let bestRatios: { [key: string]: number } = {};
       let bestDeltaE = Infinity;
-      
+
       // 랜덤 샘플링으로 최적 비율 찾기
       for (let i = 0; i < 1000; i++) {
         const testRatios: { [key: string]: number } = {};
         let total = 0;
-        
-        selectedInks.forEach(inkId => {
+
+        selectedInks.forEach((inkId) => {
           const ratio = Math.random();
           testRatios[inkId] = ratio;
           total += ratio;
         });
-        
+
         // 정규화
-        selectedInks.forEach(inkId => {
+        selectedInks.forEach((inkId) => {
           testRatios[inkId] = (testRatios[inkId] / total) * 100;
         });
-        
+
         // 혼합 색상 계산
-        const testInks = inks.map(ink => ({ ...ink.concentrations[100], type: ink.type }));
-        const testConcentrations = selectedInks.map(inkId => testRatios[inkId] / 100);
-        
+        const testInks = inks.map((ink) => ({ ...ink.concentrations[100], type: ink.type }));
+        const testConcentrations = selectedInks.map((inkId) => testRatios[inkId] / 100);
+
         const mixedColor = kubelkaMunk.mixInks(testInks, testConcentrations, substrate);
-        
+
         const deltaE = ColorScience.calculateDeltaE00(
-          targetColor.L, targetColor.a, targetColor.b,
-          mixedColor.L, mixedColor.a, mixedColor.b
+          targetColor.L,
+          targetColor.a,
+          targetColor.b,
+          mixedColor.L,
+          mixedColor.a,
+          mixedColor.b,
         );
-        
+
         if (deltaE < bestDeltaE) {
           bestDeltaE = deltaE;
           bestRatios = { ...testRatios };
         }
       }
-      
+
       setInkRatios(bestRatios);
       calculateMixing();
-      
     } catch (error) {
       console.error('Optimization error:', error);
     } finally {
@@ -224,10 +237,10 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
                     onChange={() => handleInkToggle(ink.id)}
                   />
                   <span className="ink-name">{ink.name}</span>
-                  <div 
+                  <div
                     className="ink-color-sample"
                     style={{
-                      backgroundColor: `lab(${ink.concentrations[100].L}% ${ink.concentrations[100].a} ${ink.concentrations[100].b})`
+                      backgroundColor: `lab(${ink.concentrations[100].L}% ${ink.concentrations[100].a} ${ink.concentrations[100].b})`,
                     }}
                   />
                 </label>
@@ -248,12 +261,13 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
               <option value="transparent">투명 필름</option>
             </select>
           </div>
-          
-          {selectedInks.map(inkId => {
-            const ink = [...inkDatabase.baseInks, ...inkDatabase.metallicInks]
-              .find((i: Ink) => i.id === inkId);
+
+          {selectedInks.map((inkId) => {
+            const ink = [...inkDatabase.baseInks, ...inkDatabase.metallicInks].find(
+              (i: Ink) => i.id === inkId,
+            );
             if (!ink) return null;
-            
+
             return (
               <div key={inkId} className="ratio-control">
                 <span className="ink-label">{ink.name}</span>
@@ -275,7 +289,7 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
               </div>
             );
           })}
-          
+
           <div className="ratio-actions">
             <button onClick={normalizeRatios} className="btn btn-small">
               정규화
@@ -291,12 +305,12 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
         {mixingResult && (
           <div className="mixing-result">
             <h3>혼합 결과</h3>
-            
+
             <div className="result-color">
-              <div 
+              <div
                 className="color-preview"
                 style={{
-                  backgroundColor: `lab(${mixingResult.color.L}% ${mixingResult.color.a} ${mixingResult.color.b})`
+                  backgroundColor: `lab(${mixingResult.color.L}% ${mixingResult.color.a} ${mixingResult.color.b})`,
                 }}
               />
               <div className="color-values">
@@ -304,9 +318,7 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
                 <div>a*: {mixingResult.color.a.toFixed(2)}</div>
                 <div>b*: {mixingResult.color.b.toFixed(2)}</div>
                 {targetColor && (
-                  <div className="delta-e">
-                    ΔE00: {mixingResult.deltaE.toFixed(2)}
-                  </div>
+                  <div className="delta-e">ΔE00: {mixingResult.deltaE.toFixed(2)}</div>
                 )}
               </div>
             </div>
@@ -344,20 +356,20 @@ const MixingCalculator: React.FC<MixingCalculatorProps> = ({ inkDatabase, target
                 <h4>색상 비교</h4>
                 <div className="comparison-display">
                   <div className="comparison-item">
-                    <div 
+                    <div
                       className="color-block"
                       style={{
-                        backgroundColor: `lab(${targetColor.L}% ${targetColor.a} ${targetColor.b})`
+                        backgroundColor: `lab(${targetColor.L}% ${targetColor.a} ${targetColor.b})`,
                       }}
                     />
                     <span>타겟</span>
                   </div>
                   <div className="comparison-arrow">→</div>
                   <div className="comparison-item">
-                    <div 
+                    <div
                       className="color-block"
                       style={{
-                        backgroundColor: `lab(${mixingResult.color.L}% ${mixingResult.color.a} ${mixingResult.color.b})`
+                        backgroundColor: `lab(${mixingResult.color.L}% ${mixingResult.color.a} ${mixingResult.color.b})`,
                       }}
                     />
                     <span>결과</span>

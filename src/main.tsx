@@ -5,5 +5,5 @@ import ProfessionalApp from './ProfessionalApp';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ProfessionalApp />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

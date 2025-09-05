@@ -20,32 +20,34 @@ const ComparisonView: React.FC<ComparisonViewProps> = ({ comparison, onClose }) 
     <div className="comparison-view">
       <div className="comparison-header">
         <h3>계산 방식 비교</h3>
-        <button className="close-btn" onClick={onClose}>×</button>
+        <button className="close-btn" onClick={onClose}>
+          ×
+        </button>
       </div>
 
       <div className="comparison-grid">
-        <div className={`method-result ${comparison.recommendation === 'legacy' ? 'recommended' : ''}`}>
+        <div
+          className={`method-result ${comparison.recommendation === 'legacy' ? 'recommended' : ''}`}
+        >
           <h4>Legacy (Lab 직접 혼합)</h4>
           <div className="result-values">
             <div>L*: {comparison.legacy.mixed.L.toFixed(1)}</div>
             <div>a*: {comparison.legacy.mixed.a.toFixed(1)}</div>
             <div>b*: {comparison.legacy.mixed.b.toFixed(1)}</div>
           </div>
-          <div className="delta-e">
-            ΔE: {comparison.legacy.deltaE.toFixed(3)}
-          </div>
+          <div className="delta-e">ΔE: {comparison.legacy.deltaE.toFixed(3)}</div>
         </div>
 
-        <div className={`method-result ${comparison.recommendation === 'modern' ? 'recommended' : ''}`}>
+        <div
+          className={`method-result ${comparison.recommendation === 'modern' ? 'recommended' : ''}`}
+        >
           <h4>Modern (XYZ 혼합)</h4>
           <div className="result-values">
             <div>L*: {comparison.modern.mixed.L.toFixed(1)}</div>
             <div>a*: {comparison.modern.mixed.a.toFixed(1)}</div>
             <div>b*: {comparison.modern.mixed.b.toFixed(1)}</div>
           </div>
-          <div className="delta-e">
-            ΔE: {comparison.modern.deltaE.toFixed(3)}
-          </div>
+          <div className="delta-e">ΔE: {comparison.modern.deltaE.toFixed(3)}</div>
         </div>
       </div>
 

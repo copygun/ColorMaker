@@ -13,7 +13,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, setCurrentPage }) 
     { id: 'database', label: '색상 데이터베이스' },
     { id: 'recipes', label: '레시피 관리' },
     { id: 'profiles', label: '인쇄 프로파일' },
-    { id: 'settings', label: '설정' }
+    { id: 'settings', label: '설정' },
   ];
 
   return (
@@ -24,14 +24,14 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, setCurrentPage }) 
           <p className="header-subtitle">Professional Color Recipe Management System</p>
         </div>
         <nav className="header-nav">
-          {navItems.map(item => (
-            <a 
+          {navItems.map((item) => (
+            <a
               key={item.id}
-              href="#" 
+              href="#"
               className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-              onClick={(e) => { 
-                e.preventDefault(); 
-                setCurrentPage(item.id); 
+              onClick={(e) => {
+                e.preventDefault();
+                setCurrentPage(item.id);
               }}
             >
               {item.label}

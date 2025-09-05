@@ -16,14 +16,14 @@ const RecipeManagement: React.FC<RecipeManagementProps> = ({
   setShowHistoryModal,
   setTargetColor,
   setCurrentRecipe,
-  setCurrentPage
+  setCurrentPage,
 }) => {
   return (
     <div className="pro-card">
       <div className="pro-card-header">
         <h2 className="pro-card-title">
           레시피 관리
-          <button 
+          <button
             className="pro-button pro-button-secondary"
             style={{ marginLeft: 'auto' }}
             onClick={() => setShowHistoryModal(true)}
@@ -55,13 +55,13 @@ const RecipeManagement: React.FC<RecipeManagementProps> = ({
                   <tr key={index}>
                     <td>{date.toLocaleDateString('ko-KR')}</td>
                     <td>
-                      L*{recipe.target.L.toFixed(1)} 
-                      a*{recipe.target.a.toFixed(1)} 
+                      L*{recipe.target.L.toFixed(1)}
+                      a*{recipe.target.a.toFixed(1)}
                       b*{recipe.target.b.toFixed(1)}
                     </td>
                     <td>
-                      L*{recipe.mixed.L.toFixed(1)} 
-                      a*{recipe.mixed.a.toFixed(1)} 
+                      L*{recipe.mixed.L.toFixed(1)}
+                      a*{recipe.mixed.a.toFixed(1)}
                       b*{recipe.mixed.b.toFixed(1)}
                     </td>
                     <td>{recipe.deltaE.toFixed(2)}</td>

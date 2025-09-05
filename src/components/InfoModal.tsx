@@ -14,7 +14,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, title = '정보'
 
   return (
     <>
-      <div 
+      <div
         className="modal-backdrop"
         onClick={onClose}
         style={{
@@ -27,10 +27,10 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, title = '정보'
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
         }}
       >
-        <div 
+        <div
           className="modal-content"
           onClick={(e) => e.stopPropagation()}
           style={{
@@ -40,15 +40,17 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, title = '정보'
             maxWidth: '500px',
             maxHeight: '80vh',
             overflow: 'auto',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
           }}
         >
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center',
-            marginBottom: '16px'
-          }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+            }}
+          >
             <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: 600 }}>{title}</h3>
             <button
               onClick={onClose}
@@ -65,34 +67,36 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose, title = '정보'
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: '4px',
-                transition: 'background-color 0.2s'
+                transition: 'background-color 0.2s',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
               ×
             </button>
           </div>
-          
-          <div style={{ 
-            fontSize: '0.875rem', 
-            lineHeight: '1.6',
-            color: '#333'
-          }}>
+
+          <div
+            style={{
+              fontSize: '0.875rem',
+              lineHeight: '1.6',
+              color: '#333',
+            }}
+          >
             {displayContent.map((line, index) => (
               <div key={index} style={{ marginBottom: line === '' ? '8px' : '4px' }}>
                 {line || '\u00A0'}
               </div>
             ))}
           </div>
-          
+
           <div style={{ marginTop: '20px', textAlign: 'right' }}>
             <button
               onClick={onClose}
               className="pro-button pro-button-primary"
               style={{
                 padding: '8px 20px',
-                fontSize: '0.875rem'
+                fontSize: '0.875rem',
               }}
             >
               확인

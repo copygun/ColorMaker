@@ -16,34 +16,34 @@ const OptimizedMixing: React.FC<OptimizedMixingProps> = ({ targetColor }) => {
     use100: true,
     use70: true,
     use40: true,
-    costWeight: 0.2
+    costWeight: 0.2,
   });
 
   const calculateOptimalMix = useCallback(() => {
     setIsCalculating(true);
-    
+
     // 선택된 농도들
     const concentrations: number[] = [];
     if (options.use100) concentrations.push(100);
     if (options.use70) concentrations.push(70);
     if (options.use40) concentrations.push(40);
-    
+
     if (concentrations.length === 0) {
       alert('최소 하나의 농도를 선택해주세요');
       setIsCalculating(false);
       return;
     }
-    
+
     const engine = new OptimizedMixingEngine();
-    
+
     setTimeout(() => {
       const rawResult = engine.findOptimalMix(targetColor, baseInks, {
         maxInks: options.maxInks,
         preferredConcentrations: concentrations,
         includeWhite: options.includeWhite,
-        costWeight: options.costWeight
+        costWeight: options.costWeight,
       });
-      
+
       const formatted = engine.formatResult(rawResult);
       setResult(formatted);
       setIsCalculating(false);
@@ -53,15 +53,15 @@ const OptimizedMixing: React.FC<OptimizedMixingProps> = ({ targetColor }) => {
   return (
     <div className="optimized-mixing">
       <h3>🎯 최적화된 잉크 배합</h3>
-      
+
       <div className="options-panel">
         <h4>배합 옵션</h4>
-        
+
         <div className="option-group">
           <label>최대 잉크 수:</label>
-          <select 
-            value={options.maxInks} 
-            onChange={(e) => setOptions({...options, maxInks: parseInt(e.target.value)})}
+          <select
+            value={options.maxInks}
+            onChange={(e) => setOptions({ ...options, maxInks: parseInt(e.target.value) })}
           >
             <option value={2}>2개</option>
             <option value={3}>3개</option>
@@ -69,81 +69,77 @@ const OptimizedMixing: React.FC<OptimizedMixingProps> = ({ targetColor }) => {
             <option value={5}>5개</option>
           </select>
         </div>
-        
+
         <div className="option-group">
           <label>사용 가능 농도:</label>
           <div className="checkbox-group">
             <label>
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={options.use100}
-                onChange={(e) => setOptions({...options, use100: e.target.checked})}
+                onChange={(e) => setOptions({ ...options, use100: e.target.checked })}
               />
               100% (베이스)
             </label>
             <label>
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={options.use70}
-                onChange={(e) => setOptions({...options, use70: e.target.checked})}
+                onChange={(e) => setOptions({ ...options, use70: e.target.checked })}
               />
               70% (Satin)
             </label>
             <label>
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={options.use40}
-                onChange={(e) => setOptions({...options, use40: e.target.checked})}
+                onChange={(e) => setOptions({ ...options, use40: e.target.checked })}
               />
               40% (Satin)
             </label>
           </div>
         </div>
-        
+
         <div className="option-group">
           <label>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={options.includeWhite}
-              onChange={(e) => setOptions({...options, includeWhite: e.target.checked})}
+              onChange={(e) => setOptions({ ...options, includeWhite: e.target.checked })}
             />
             화이트 포함
           </label>
         </div>
-        
+
         <div className="option-group">
           <label>비용 가중치:</label>
-          <input 
-            type="range" 
-            min="0" 
-            max="1" 
+          <input
+            type="range"
+            min="0"
+            max="1"
             step="0.1"
             value={options.costWeight}
-            onChange={(e) => setOptions({...options, costWeight: parseFloat(e.target.value)})}
+            onChange={(e) => setOptions({ ...options, costWeight: parseFloat(e.target.value) })}
           />
           <span>{options.costWeight.toFixed(1)}</span>
         </div>
-        
-        <button 
-          className="calculate-btn"
-          onClick={calculateOptimalMix}
-          disabled={isCalculating}
-        >
+
+        <button className="calculate-btn" onClick={calculateOptimalMix} disabled={isCalculating}>
           {isCalculating ? '계산 중...' : '최적 배합 계산'}
         </button>
       </div>
-      
+
       {result && (
         <div className="result-panel">
           <h4>최적 배합 결과</h4>
-          
+
           <div className="quality-indicator">
             <span className={`quality-badge ${result.quality.toLowerCase()}`}>
               {result.quality}
             </span>
             <span className="delta-e">ΔE: {result.deltaE}</span>
           </div>
-          
+
           <div className="recipe-table">
             <table>
               <thead>
@@ -166,48 +162,52 @@ const OptimizedMixing: React.FC<OptimizedMixingProps> = ({ targetColor }) => {
               </tbody>
             </table>
           </div>
-          
+
           <div className="color-comparison">
             <div className="color-box">
-              <div 
+              <div
                 className="color-sample"
                 style={{
-                  backgroundColor: `lab(${targetColor.L}% ${targetColor.a} ${targetColor.b})`
+                  backgroundColor: `lab(${targetColor.L}% ${targetColor.a} ${targetColor.b})`,
                 }}
               />
               <div className="color-label">목표</div>
               <div className="lab-values">
-                L: {targetColor.L.toFixed(1)}<br/>
-                a: {targetColor.a.toFixed(1)}<br/>
+                L: {targetColor.L.toFixed(1)}
+                <br />
+                a: {targetColor.a.toFixed(1)}
+                <br />
                 b: {targetColor.b.toFixed(1)}
               </div>
             </div>
-            
+
             <div className="arrow">→</div>
-            
+
             <div className="color-box">
-              <div 
+              <div
                 className="color-sample"
                 style={{
-                  backgroundColor: `lab(${result.achievedLab.L}% ${result.achievedLab.a} ${result.achievedLab.b})`
+                  backgroundColor: `lab(${result.achievedLab.L}% ${result.achievedLab.a} ${result.achievedLab.b})`,
                 }}
               />
               <div className="color-label">달성</div>
               <div className="lab-values">
-                L*: {result.achievedLab.L.toFixed(1)}<br/>
-                a*: {result.achievedLab.a.toFixed(1)}<br/>
+                L*: {result.achievedLab.L.toFixed(1)}
+                <br />
+                a*: {result.achievedLab.a.toFixed(1)}
+                <br />
                 b*: {result.achievedLab.b.toFixed(1)}
               </div>
             </div>
           </div>
-          
+
           <div className="cost-info">
             <span>예상 비용 지수: {result.cost}</span>
             <small>(낮은 농도 잉크는 제조 비용이 높음)</small>
           </div>
         </div>
       )}
-      
+
       <style>{`
         .optimized-mixing {
           padding: 20px;

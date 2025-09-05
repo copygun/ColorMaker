@@ -16,21 +16,21 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
   const [closestPantones, setClosestPantones] = useState<any[]>([]);
   const [showPantoneSearch, setShowPantoneSearch] = useState(false);
   const [inputMode, setInputMode] = useState<'lab' | 'rgb' | 'hex' | 'cmyk'>('lab');
-  const [recentColors, setRecentColors] = useState<Array<{lab: LabColor, name: string}>>([]);
-  
+  const [recentColors, setRecentColors] = useState<Array<{ lab: LabColor; name: string }>>([]);
+
   // 입력 필드용 문자열 상태 (음수 입력 지원)
   const [inputValues, setInputValues] = useState({
     L: value.L.toString(),
     a: value.a.toString(),
-    b: value.b.toString()
+    b: value.b.toString(),
   });
 
   // RGB 입력 상태
   const [rgbInputValues, setRgbInputValues] = useState({ r: '', g: '', b: '' });
-  
+
   // HEX 입력 상태
   const [hexInputValue, setHexInputValue] = useState('');
-  
+
   // CMYK 입력 상태
   const [cmykInputValues, setCmykInputValues] = useState({ c: '', m: '', y: '', k: '' });
 
@@ -49,26 +49,29 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
   // value prop이 외부에서 변경될 때만 업데이트
   useEffect(() => {
     const activeElement = document.activeElement;
-    const isInputFocused = activeElement && 
-      activeElement.tagName === 'INPUT' && 
-      (activeElement.id === 'lab-L' || activeElement.id === 'lab-a' || activeElement.id === 'lab-b');
-    
+    const isInputFocused =
+      activeElement &&
+      activeElement.tagName === 'INPUT' &&
+      (activeElement.id === 'lab-L' ||
+        activeElement.id === 'lab-a' ||
+        activeElement.id === 'lab-b');
+
     if (!isInputFocused) {
       setLocalValue(value);
       setInputValues({
         L: value.L.toString(),
         a: value.a.toString(),
-        b: value.b.toString()
+        b: value.b.toString(),
       });
-      
+
       // RGB 값도 업데이트
       const rgb = convertLabToRgb(value.L, value.a, value.b);
       setRgbInputValues({
         r: rgb.r.toString(),
         g: rgb.g.toString(),
-        b: rgb.b.toString()
+        b: rgb.b.toString(),
       });
-      
+
       // HEX 값 업데이트 (대문자로 표기)
       const toHex = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
       setHexInputValue(`#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`);
@@ -80,33 +83,33 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
     if (labToRgb) {
       return labToRgb(L, a, b);
     }
-    
+
     // Lab to XYZ
     const fy = (L + 16) / 116;
     const fx = a / 500 + fy;
     const fz = fy - b / 200;
-    
+
     const xr = fx ** 3 > 0.008856 ? fx ** 3 : (fx * 116 - 16) / 903.3;
     const yr = L > 7.9996 ? fy ** 3 : L / 903.3;
     const zr = fz ** 3 > 0.008856 ? fz ** 3 : (fz * 116 - 16) / 903.3;
-    
+
     const X = xr * 95.047;
-    const Y = yr * 100.000;
+    const Y = yr * 100.0;
     const Z = zr * 108.883;
-    
+
     // XYZ to RGB
     let rVal = X * 3.2406 + Y * -1.5372 + Z * -0.4986;
     let gVal = X * -0.9689 + Y * 1.8758 + Z * 0.0415;
-    let bVal = X * 0.0557 + Y * -0.2040 + Z * 1.0570;
-    
-    rVal = rVal > 0.0031308 ? 1.055 * (rVal ** (1 / 2.4)) - 0.055 : 12.92 * rVal;
-    gVal = gVal > 0.0031308 ? 1.055 * (gVal ** (1 / 2.4)) - 0.055 : 12.92 * gVal;
-    bVal = bVal > 0.0031308 ? 1.055 * (bVal ** (1 / 2.4)) - 0.055 : 12.92 * bVal;
-    
+    let bVal = X * 0.0557 + Y * -0.204 + Z * 1.057;
+
+    rVal = rVal > 0.0031308 ? 1.055 * rVal ** (1 / 2.4) - 0.055 : 12.92 * rVal;
+    gVal = gVal > 0.0031308 ? 1.055 * gVal ** (1 / 2.4) - 0.055 : 12.92 * gVal;
+    bVal = bVal > 0.0031308 ? 1.055 * bVal ** (1 / 2.4) - 0.055 : 12.92 * bVal;
+
     return {
       r: Math.max(0, Math.min(255, Math.round(rVal * 255))),
       g: Math.max(0, Math.min(255, Math.round(gVal * 255))),
-      b: Math.max(0, Math.min(255, Math.round(bVal * 255)))
+      b: Math.max(0, Math.min(255, Math.round(bVal * 255))),
     };
   };
 
@@ -116,28 +119,28 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
     let rVal = rInput / 255;
     let gVal = gInput / 255;
     let bVal = bInput / 255;
-    
+
     rVal = rVal > 0.04045 ? Math.pow((rVal + 0.055) / 1.055, 2.4) : rVal / 12.92;
     gVal = gVal > 0.04045 ? Math.pow((gVal + 0.055) / 1.055, 2.4) : gVal / 12.92;
     bVal = bVal > 0.04045 ? Math.pow((bVal + 0.055) / 1.055, 2.4) : bVal / 12.92;
-    
+
     const X = (rVal * 0.4124564 + gVal * 0.3575761 + bVal * 0.1804375) * 100;
-    const Y = (rVal * 0.2126729 + gVal * 0.7151522 + bVal * 0.0721750) * 100;
-    const Z = (rVal * 0.0193339 + gVal * 0.1191920 + bVal * 0.9503041) * 100;
-    
+    const Y = (rVal * 0.2126729 + gVal * 0.7151522 + bVal * 0.072175) * 100;
+    const Z = (rVal * 0.0193339 + gVal * 0.119192 + bVal * 0.9503041) * 100;
+
     // XYZ to Lab
     const xr = X / 95.047;
-    const yr = Y / 100.000;
+    const yr = Y / 100.0;
     const zr = Z / 108.883;
-    
+
     const fx = xr > 0.008856 ? Math.cbrt(xr) : (903.3 * xr + 16) / 116;
     const fy = yr > 0.008856 ? Math.cbrt(yr) : (903.3 * yr + 16) / 116;
     const fz = zr > 0.008856 ? Math.cbrt(zr) : (903.3 * zr + 16) / 116;
-    
+
     const labL = 116 * fy - 16;
     const labA = 500 * (fx - fy);
     const labB = 200 * (fy - fz);
-    
+
     return { L: labL, a: labA, b: labB };
   };
 
@@ -185,71 +188,71 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
     const r = rgb.r / 255;
     const g = rgb.g / 255;
     const b = rgb.b / 255;
-    
+
     const k = 1 - Math.max(r, g, b);
     const c = k === 1 ? 0 : (1 - r - k) / (1 - k);
     const m = k === 1 ? 0 : (1 - g - k) / (1 - k);
     const y = k === 1 ? 0 : (1 - b - k) / (1 - k);
-    
+
     return {
       c: Math.round(c * 100),
       m: Math.round(m * 100),
       y: Math.round(y * 100),
-      k: Math.round(k * 100)
+      k: Math.round(k * 100),
     };
   }, [localValue, labToRgb]);
 
   // Lab 입력 처리
   const handleInputChange = (component: keyof LabColor, newValue: string) => {
-    setInputValues(prev => ({
+    setInputValues((prev) => ({
       ...prev,
-      [component]: newValue
+      [component]: newValue,
     }));
   };
 
   const handleInputBlur = (component: keyof LabColor) => {
     const inputValue = inputValues[component];
-    
+
     if (inputValue === '') {
       const updated = { ...localValue, [component]: 0 };
       setLocalValue(updated);
-      setInputValues(prev => ({ ...prev, [component]: '0' }));
+      setInputValues((prev) => ({ ...prev, [component]: '0' }));
       onChange(updated);
       return;
     }
-    
+
     if (inputValue === '-' || inputValue === '.' || inputValue === '-.') {
-      setInputValues(prev => ({ 
-        ...prev, 
-        [component]: localValue[component].toString() 
+      setInputValues((prev) => ({
+        ...prev,
+        [component]: localValue[component].toString(),
       }));
       return;
     }
-    
+
     const numValue = parseFloat(inputValue);
-    
+
     if (isNaN(numValue)) {
-      setInputValues(prev => ({ 
-        ...prev, 
-        [component]: localValue[component].toString() 
+      setInputValues((prev) => ({
+        ...prev,
+        [component]: localValue[component].toString(),
       }));
       return;
     }
-    
+
     let validValue = numValue;
     if (component === 'L') {
       validValue = Math.max(0, Math.min(100, numValue));
     } else {
       validValue = Math.max(-128, Math.min(128, numValue));
     }
-    
+
     if (validValue !== numValue) {
-      setInputValues(prev => ({ 
-        ...prev, 
-        [component]: validValue.toString() 
+      setInputValues((prev) => ({
+        ...prev,
+        [component]: validValue.toString(),
       }));
     }
-    
+
     const updated = { ...localValue, [component]: validValue };
     setLocalValue(updated);
 
@@ -264,25 +267,25 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
 
   // RGB 입력 처리
   const handleRgbInputChange = (component: 'r' | 'g' | 'b', value: string) => {
-    setRgbInputValues(prev => ({ ...prev, [component]: value }));
+    setRgbInputValues((prev) => ({ ...prev, [component]: value }));
   };
 
   const handleRgbInputBlur = (component: 'r' | 'g' | 'b') => {
     const value = parseInt(rgbInputValues[component]);
     if (!isNaN(value)) {
       const clampedValue = Math.max(0, Math.min(255, value));
-      setRgbInputValues(prev => ({ ...prev, [component]: clampedValue.toString() }));
-      
+      setRgbInputValues((prev) => ({ ...prev, [component]: clampedValue.toString() }));
+
       const r = component === 'r' ? clampedValue : parseInt(rgbInputValues.r) || 0;
       const g = component === 'g' ? clampedValue : parseInt(rgbInputValues.g) || 0;
       const b = component === 'b' ? clampedValue : parseInt(rgbInputValues.b) || 0;
-      
+
       const lab = convertRgbToLab(r, g, b);
       setLocalValue(lab);
       setInputValues({
         L: lab.L.toFixed(1),
         a: lab.a.toFixed(1),
-        b: lab.b.toFixed(1)
+        b: lab.b.toFixed(1),
       });
       onChange(lab);
       saveToRecent(lab);
@@ -302,12 +305,12 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
       setInputValues({
         L: lab.L.toFixed(1),
         a: lab.a.toFixed(1),
-        b: lab.b.toFixed(1)
+        b: lab.b.toFixed(1),
       });
       setRgbInputValues({
         r: rgb.r.toString(),
         g: rgb.g.toString(),
-        b: rgb.b.toString()
+        b: rgb.b.toString(),
       });
       onChange(lab);
       saveToRecent(lab);
@@ -316,33 +319,33 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
 
   // CMYK 입력 처리
   const handleCmykInputChange = (component: 'c' | 'm' | 'y' | 'k', value: string) => {
-    setCmykInputValues(prev => ({ ...prev, [component]: value }));
+    setCmykInputValues((prev) => ({ ...prev, [component]: value }));
   };
 
   const handleCmykInputBlur = (component: 'c' | 'm' | 'y' | 'k') => {
     const value = parseFloat(cmykInputValues[component]);
     if (!isNaN(value)) {
       const clampedValue = Math.max(0, Math.min(100, value));
-      setCmykInputValues(prev => ({ ...prev, [component]: clampedValue.toString() }));
-      
+      setCmykInputValues((prev) => ({ ...prev, [component]: clampedValue.toString() }));
+
       const c = component === 'c' ? clampedValue : parseFloat(cmykInputValues.c) || 0;
       const m = component === 'm' ? clampedValue : parseFloat(cmykInputValues.m) || 0;
       const y = component === 'y' ? clampedValue : parseFloat(cmykInputValues.y) || 0;
       const k = component === 'k' ? clampedValue : parseFloat(cmykInputValues.k) || 0;
-      
+
       const rgb = cmykToRgb(c, m, y, k);
       const lab = convertRgbToLab(rgb.r, rgb.g, rgb.b);
-      
+
       setLocalValue(lab);
       setInputValues({
         L: lab.L.toFixed(1),
         a: lab.a.toFixed(1),
-        b: lab.b.toFixed(1)
+        b: lab.b.toFixed(1),
       });
       setRgbInputValues({
         r: rgb.r.toString(),
         g: rgb.g.toString(),
-        b: rgb.b.toString()
+        b: rgb.b.toString(),
       });
       onChange(lab);
       saveToRecent(lab);
@@ -353,14 +356,15 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
   const saveToRecent = (lab: LabColor) => {
     const newColor = {
       lab,
-      name: `L:${lab.L.toFixed(1)} a:${lab.a.toFixed(1)} b:${lab.b.toFixed(1)}`
+      name: `L:${lab.L.toFixed(1)} a:${lab.a.toFixed(1)} b:${lab.b.toFixed(1)}`,
     };
-    
-    setRecentColors(prev => {
-      const filtered = prev.filter(c => 
-        Math.abs(c.lab.L - lab.L) > 0.5 || 
-        Math.abs(c.lab.a - lab.a) > 0.5 || 
-        Math.abs(c.lab.b - lab.b) > 0.5
+
+    setRecentColors((prev) => {
+      const filtered = prev.filter(
+        (c) =>
+          Math.abs(c.lab.L - lab.L) > 0.5 ||
+          Math.abs(c.lab.a - lab.a) > 0.5 ||
+          Math.abs(c.lab.b - lab.b) > 0.5,
       );
       const updated = [newColor, ...filtered].slice(0, 8);
       localStorage.setItem('recentColors', JSON.stringify(updated));
@@ -369,12 +373,12 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
   };
 
   // 최근 색상 선택
-  const selectRecentColor = (color: { lab: LabColor, name: string }) => {
+  const selectRecentColor = (color: { lab: LabColor; name: string }) => {
     setLocalValue(color.lab);
     setInputValues({
       L: color.lab.L.toString(),
       a: color.lab.a.toString(),
-      b: color.lab.b.toString()
+      b: color.lab.b.toString(),
     });
     onChange(color.lab);
   };
@@ -411,7 +415,7 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
     setInputValues({
       L: pantone.L.toString(),
       a: pantone.a.toString(),
-      b: pantone.b.toString()
+      b: pantone.b.toString(),
     });
     onChange(newLab);
     setPantoneInput(pantone.code);
@@ -421,13 +425,16 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
   return (
     <div className="color-input-container">
       {/* 입력 모드 선택 탭 */}
-      <div className="input-mode-tabs" style={{
-        display: 'flex',
-        gap: '10px',
-        marginBottom: '20px',
-        borderBottom: '2px solid #e2e8f0',
-        paddingBottom: '10px'
-      }}>
+      <div
+        className="input-mode-tabs"
+        style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '20px',
+          borderBottom: '2px solid #e2e8f0',
+          paddingBottom: '10px',
+        }}
+      >
         <button
           className={`mode-tab ${inputMode === 'lab' ? 'active' : ''}`}
           onClick={() => setInputMode('lab')}
@@ -438,7 +445,7 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
             border: 'none',
             borderRadius: '6px 6px 0 0',
             cursor: 'pointer',
-            fontWeight: inputMode === 'lab' ? '600' : '400'
+            fontWeight: inputMode === 'lab' ? '600' : '400',
           }}
         >
           Lab
@@ -453,7 +460,7 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
             border: 'none',
             borderRadius: '6px 6px 0 0',
             cursor: 'pointer',
-            fontWeight: inputMode === 'rgb' ? '600' : '400'
+            fontWeight: inputMode === 'rgb' ? '600' : '400',
           }}
         >
           RGB
@@ -468,7 +475,7 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
             border: 'none',
             borderRadius: '6px 6px 0 0',
             cursor: 'pointer',
-            fontWeight: inputMode === 'hex' ? '600' : '400'
+            fontWeight: inputMode === 'hex' ? '600' : '400',
           }}
         >
           HEX
@@ -483,7 +490,7 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
             border: 'none',
             borderRadius: '6px 6px 0 0',
             cursor: 'pointer',
-            fontWeight: inputMode === 'cmyk' ? '600' : '400'
+            fontWeight: inputMode === 'cmyk' ? '600' : '400',
           }}
         >
           CMYK
@@ -493,7 +500,9 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
       {/* Lab 색상 입력 */}
       {inputMode === 'lab' && (
         <div className="color-input">
-          <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}>
+          <h3
+            style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}
+          >
             🎯 Lab 색상 값 입력
           </h3>
           <div className="input-group">
@@ -522,8 +531,12 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
               placeholder="-20"
               title="빨강(+) ↔ 녹색(-)"
               style={{
-                color: parseFloat(inputValues.a) < 0 ? '#22863a' : 
-                       parseFloat(inputValues.a) > 0 ? '#dc3545' : 'inherit'
+                color:
+                  parseFloat(inputValues.a) < 0
+                    ? '#22863a'
+                    : parseFloat(inputValues.a) > 0
+                      ? '#dc3545'
+                      : 'inherit',
               }}
             />
             <span className="range">(-128 to 128) 빨강-녹색</span>
@@ -540,8 +553,12 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
               placeholder="-30"
               title="노랑(+) ↔ 파랑(-)"
               style={{
-                color: parseFloat(inputValues.b) < 0 ? '#0366d6' : 
-                       parseFloat(inputValues.b) > 0 ? '#ffc107' : 'inherit'
+                color:
+                  parseFloat(inputValues.b) < 0
+                    ? '#0366d6'
+                    : parseFloat(inputValues.b) > 0
+                      ? '#ffc107'
+                      : 'inherit',
               }}
             />
             <span className="range">(-128 to 128) 노랑-파랑</span>
@@ -552,7 +569,9 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
       {/* RGB 색상 입력 */}
       {inputMode === 'rgb' && (
         <div className="color-input">
-          <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}>
+          <h3
+            style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}
+          >
             🎨 RGB 색상 값 입력
           </h3>
           <div className="input-group">
@@ -597,7 +616,9 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
       {/* HEX 색상 입력 */}
       {inputMode === 'hex' && (
         <div className="color-input">
-          <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}>
+          <h3
+            style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}
+          >
             #️⃣ HEX 색상 코드 입력
           </h3>
           <div className="input-group">
@@ -619,7 +640,9 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
       {/* CMYK 색상 입력 */}
       {inputMode === 'cmyk' && (
         <div className="color-input">
-          <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}>
+          <h3
+            style={{ marginBottom: '15px', fontSize: '18px', fontWeight: '700', color: '#2d3748' }}
+          >
             🖨️ CMYK 색상 값 입력
           </h3>
           <div className="input-group">
@@ -672,49 +695,100 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
           </div>
         </div>
       )}
-      
+
       {/* 색상 미리보기 */}
       <div className="color-preview-panel">
         <h3 style={{ marginBottom: '15px', fontSize: '16px', fontWeight: '600', color: '#2d3748' }}>
           색상 변환 값
         </h3>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-          <div 
+          <div
             className="color-preview-large"
-            style={{ 
+            style={{
               backgroundColor: rgbColor,
               width: '100px',
               height: '100px',
               borderRadius: '8px',
               border: '2px solid #2d3748',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
             }}
           />
-          <div className="color-values" style={{ 
-            flex: 1,
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '16px',
-            alignItems: 'start'
-          }}>
+          <div
+            className="color-values"
+            style={{
+              flex: 1,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '16px',
+              alignItems: 'start',
+            }}
+          >
             <div className="color-space-group">
-              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>Lab</h4>
-              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>L*: {localValue.L.toFixed(1)}</div>
-              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>a*: {localValue.a.toFixed(1)}</div>
-              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>b*: {localValue.b.toFixed(1)}</div>
+              <h4
+                style={{
+                  fontSize: '0.8125rem',
+                  fontWeight: '700',
+                  marginBottom: '6px',
+                  color: '#000',
+                }}
+              >
+                Lab
+              </h4>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>
+                L*: {localValue.L.toFixed(1)}
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>
+                a*: {localValue.a.toFixed(1)}
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>
+                b*: {localValue.b.toFixed(1)}
+              </div>
             </div>
             <div className="color-space-group">
-              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>RGB</h4>
-              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>R: {rgbColor.match(/\d+/g)?.[0] || 0}</div>
-              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>G: {rgbColor.match(/\d+/g)?.[1] || 0}</div>
-              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>B: {rgbColor.match(/\d+/g)?.[2] || 0}</div>
+              <h4
+                style={{
+                  fontSize: '0.8125rem',
+                  fontWeight: '700',
+                  marginBottom: '6px',
+                  color: '#000',
+                }}
+              >
+                RGB
+              </h4>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>
+                R: {rgbColor.match(/\d+/g)?.[0] || 0}
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>
+                G: {rgbColor.match(/\d+/g)?.[1] || 0}
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>
+                B: {rgbColor.match(/\d+/g)?.[2] || 0}
+              </div>
             </div>
             <div className="color-space-group">
-              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>HEX</h4>
+              <h4
+                style={{
+                  fontSize: '0.8125rem',
+                  fontWeight: '700',
+                  marginBottom: '6px',
+                  color: '#000',
+                }}
+              >
+                HEX
+              </h4>
               <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>{hexColor}</div>
             </div>
             <div className="color-space-group">
-              <h4 style={{ fontSize: '0.8125rem', fontWeight: '700', marginBottom: '6px', color: '#000' }}>CMYK</h4>
+              <h4
+                style={{
+                  fontSize: '0.8125rem',
+                  fontWeight: '700',
+                  marginBottom: '6px',
+                  color: '#000',
+                }}
+              >
+                CMYK
+              </h4>
               <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>C: {cmykColor.c}%</div>
               <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>M: {cmykColor.m}%</div>
               <div style={{ fontSize: '0.8125rem', color: '#4a5568' }}>Y: {cmykColor.y}%</div>
@@ -726,13 +800,18 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
 
       {/* 최근 사용 색상 */}
       {recentColors.length > 0 && (
-        <div className="recent-colors" style={{
-          marginTop: '20px',
-          padding: '15px',
-          backgroundColor: '#f7fafc',
-          borderRadius: '8px'
-        }}>
-          <h4 style={{ marginBottom: '10px', fontSize: '14px', fontWeight: '600', color: '#4a5568' }}>
+        <div
+          className="recent-colors"
+          style={{
+            marginTop: '20px',
+            padding: '15px',
+            backgroundColor: '#f7fafc',
+            borderRadius: '8px',
+          }}
+        >
+          <h4
+            style={{ marginBottom: '10px', fontSize: '14px', fontWeight: '600', color: '#4a5568' }}
+          >
             최근 사용 색상
           </h4>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -753,8 +832,8 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
                     transition: 'all 0.2s',
                     ':hover': {
                       transform: 'scale(1.1)',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                    }
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                    },
                   }}
                   title={color.name}
                 />
@@ -775,39 +854,33 @@ const ColorInput: React.FC<ColorInputProps> = ({ value, onChange, onValidate, la
             placeholder="예: 185 C, Reflex Blue C"
             onKeyPress={(e) => e.key === 'Enter' && handlePantoneSearch()}
           />
-          <button 
-            className="btn-pantone-search"
-            onClick={handlePantoneSearch}
-          >
+          <button className="btn-pantone-search" onClick={handlePantoneSearch}>
             검색
           </button>
-          <button 
+          <button
             className="btn-pantone-toggle"
             onClick={() => setShowPantoneSearch(!showPantoneSearch)}
           >
             {showPantoneSearch ? '닫기' : '가까운 색상'}
           </button>
         </div>
-        
+
         {/* 가장 가까운 PANTONE 표시 */}
         {showPantoneSearch && closestPantones.length > 0 && (
           <div className="pantone-matches">
             <h4>가장 가까운 PANTONE 색상</h4>
             {closestPantones.map((pantone, idx) => {
-              const deltaClass = pantone.deltaE < 2 ? 'excellent' : 
-                                pantone.deltaE < 5 ? 'good' : 'fair';
+              const deltaClass =
+                pantone.deltaE < 2 ? 'excellent' : pantone.deltaE < 5 ? 'good' : 'fair';
               return (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="pantone-item"
                   onClick={() => selectPantone(pantone)}
                   style={{ cursor: 'pointer' }}
                   title="클릭하여 적용"
                 >
-                  <div 
-                    className="pantone-swatch" 
-                    style={{ backgroundColor: pantone.hex }}
-                  />
+                  <div className="pantone-swatch" style={{ backgroundColor: pantone.hex }} />
                   <div className="pantone-info">
                     <div className="pantone-code">{pantone.code}</div>
                     <div className={`pantone-delta ${deltaClass}`}>

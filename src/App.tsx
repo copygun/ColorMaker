@@ -41,12 +41,17 @@ function App() {
     setDeltaEWeights,
     setDeltaEMethod,
     labToRgb,
-    getInkDatabase
+    getInkDatabase,
   } = useColorCalculation();
 
   // 상태 관리
   const [targetColor, setTargetColor] = useState<LabColor>({ L: 0, a: 0, b: 0 });
-  const [selectedInks, setSelectedInks] = useState<string[]>(['cyan', 'magenta', 'yellow', 'black']);
+  const [selectedInks, setSelectedInks] = useState<string[]>([
+    'cyan',
+    'magenta',
+    'yellow',
+    'black',
+  ]);
   const [currentRecipe, setCurrentRecipe] = useState<Recipe | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<any>(null);
@@ -60,7 +65,7 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<Recipe[]>([]);
   const [correctionEngine] = useState(() => new CorrectionEngine());
-  
+
   // 인쇄 설정 상태
   const [printMethod, setPrintMethod] = useState('offset');
   const [substrateType, setSubstrateType] = useState('white_coated');
@@ -72,13 +77,13 @@ function App() {
     try {
       const recipe = await calculateRecipe(targetColor, selectedInks, 'offset', {
         printMethod,
-        substrateType
+        substrateType,
       });
       setCurrentRecipe(recipe);
-      
+
       // 히스토리에 추가
-      setHistory(prev => [recipe, ...prev.slice(0, 9)]);
-      
+      setHistory((prev) => [recipe, ...prev.slice(0, 9)]);
+
       // LocalStorage에 저장
       localStorage.setItem('recipeHistory', JSON.stringify([recipe, ...history.slice(0, 9)]));
     } catch (error) {
@@ -104,29 +109,35 @@ function App() {
   }, [targetColor, selectedInks, compareCalculations]);
 
   // 보정 적용 핸들러
-  const handleCorrectionApply = useCallback((corrections: CorrectionSuggestion[], predictedResult: any) => {
-    // 보정이 적용된 새로운 레시피 생성
-    if (currentRecipe) {
-      const correctedRecipe = {
-        ...currentRecipe,
-        inks: [
-          ...currentRecipe.inks,
-          ...corrections.map(c => ({
-            id: c.id || c.name,
-            name: c.name,
-            percentage: c.addAmount
-          }))
-        ],
-        mixed: predictedResult.predictedLab,
-        deltaE: predictedResult.predictedDeltaE,
-        correctionApplied: true
-      };
-      
-      setCurrentRecipe(correctedRecipe);
-      setHistory(prev => [correctedRecipe, ...prev.slice(0, 9)]);
-      localStorage.setItem('recipeHistory', JSON.stringify([correctedRecipe, ...history.slice(0, 9)]));
-    }
-  }, [currentRecipe, history]);
+  const handleCorrectionApply = useCallback(
+    (corrections: CorrectionSuggestion[]) => {
+      // 보정이 적용된 새로운 레시피 생성
+      if (currentRecipe) {
+        const correctedRecipe: Recipe = {
+          ...currentRecipe,
+          inks: [
+            ...currentRecipe.inks,
+            ...corrections.map((c) => ({
+              inkId: c.inkId,
+              ratio: c.addAmount,
+              concentration: 100,
+            })),
+          ],
+          mixed: currentRecipe.mixed, // Use current recipe's mixed color
+          deltaE: currentRecipe.deltaE, // Use current recipe's deltaE
+          isCorrection: true,
+        };
+
+        setCurrentRecipe(correctedRecipe);
+        setHistory((prev) => [correctedRecipe, ...prev.slice(0, 9)]);
+        localStorage.setItem(
+          'recipeHistory',
+          JSON.stringify([correctedRecipe, ...history.slice(0, 9)]),
+        );
+      }
+    },
+    [currentRecipe, history],
+  );
 
   // 초기 로드 시 히스토리 복원
   useEffect(() => {
@@ -152,15 +163,12 @@ function App() {
           {/* 모드 선택 */}
           <section className="panel-section">
             <h2>계산 모드</h2>
-            <ModeSelector 
-              currentMode={calculationMode.mode}
-              onModeChange={switchMode}
-            />
+            <ModeSelector currentMode={calculationMode.mode} onModeChange={switchMode} />
           </section>
 
           {/* 측정 기준 정보 */}
           <MeasurementInfo />
-          
+
           {/* 인쇄 설정 (Advanced/Hybrid 모드에서만) */}
           {(calculationMode.mode === 'advanced' || calculationMode.mode === 'hybrid') && (
             <section className="panel-section">
@@ -173,47 +181,57 @@ function App() {
               />
             </section>
           )}
-          
+
           {/* 색상 입력 */}
           <section className="panel-section">
             <div className="section-header">
               <h2>목표 색상</h2>
-              <button 
+              <button
                 className="btn btn-small"
                 onClick={() => setUseModernUI(!useModernUI)}
-                style={{ 
+                style={{
                   background: useModernUI ? 'var(--primary)' : 'var(--gray-500)',
                   color: 'white',
                   padding: '4px 12px',
                   borderRadius: '4px',
                   border: 'none',
-                  fontSize: '0.875rem'
+                  fontSize: '0.875rem',
                 }}
               >
                 {useModernUI ? '모던 UI' : '클래식 UI'}
               </button>
             </div>
             {useModernUI ? (
-              <ModernColorInput 
+              <ModernColorInput
                 value={targetColor}
                 onChange={setTargetColor}
                 onValidate={(color) => {
                   const rgb = labToRgb(color.L, color.a, color.b);
-                  return rgb.r >= 0 && rgb.r <= 255 && 
-                         rgb.g >= 0 && rgb.g <= 255 && 
-                         rgb.b >= 0 && rgb.b <= 255;
+                  return (
+                    rgb.r >= 0 &&
+                    rgb.r <= 255 &&
+                    rgb.g >= 0 &&
+                    rgb.g <= 255 &&
+                    rgb.b >= 0 &&
+                    rgb.b <= 255
+                  );
                 }}
                 labToRgb={labToRgb}
               />
             ) : (
-              <ColorInput 
+              <ColorInput
                 value={targetColor}
                 onChange={setTargetColor}
                 onValidate={(color) => {
                   const rgb = labToRgb(color.L, color.a, color.b);
-                  return rgb.r >= 0 && rgb.r <= 255 && 
-                         rgb.g >= 0 && rgb.g <= 255 && 
-                         rgb.b >= 0 && rgb.b <= 255;
+                  return (
+                    rgb.r >= 0 &&
+                    rgb.r <= 255 &&
+                    rgb.g >= 0 &&
+                    rgb.g <= 255 &&
+                    rgb.b >= 0 &&
+                    rgb.b <= 255
+                  );
                 }}
                 labToRgb={labToRgb}
               />
@@ -224,15 +242,12 @@ function App() {
           <section className="panel-section">
             <div className="section-header">
               <h2>베이스 잉크</h2>
-              <button 
-                className="btn btn-small"
-                onClick={() => setShowInkManager(!showInkManager)}
-              >
+              <button className="btn btn-small" onClick={() => setShowInkManager(!showInkManager)}>
                 {showInkManager ? '닫기' : '🎨 잉크 편집'}
               </button>
             </div>
             {showInkManager ? (
-              <InkManager 
+              <InkManager
                 inkDatabase={getInkDatabase()}
                 onInkUpdate={() => {
                   // 잉크 업데이트 시 재렌더링
@@ -264,12 +279,9 @@ function App() {
           {calculationMode.mode === 'hybrid' && (
             <section className="panel-section">
               <h2>고급 기능</h2>
-              <FeatureToggles
-                features={features}
-                onToggle={toggleFeature}
-              />
+              <FeatureToggles features={features} onToggle={toggleFeature} />
               {features.ENABLE_CERTIFICATE && currentRecipe && (
-                <button 
+                <button
                   className="btn btn-certificate"
                   onClick={() => setShowCertificate(true)}
                   style={{ marginTop: '10px', width: '100%' }}
@@ -282,16 +294,16 @@ function App() {
 
           {/* 계산 버튼 */}
           <div className="action-buttons">
-            <button 
+            <button
               className="btn btn-primary"
               onClick={handleCalculate}
               disabled={isCalculating || selectedInks.length === 0}
             >
               {isCalculating ? '계산 중...' : '레시피 계산'}
             </button>
-            
+
             {calculationMode.mode === 'hybrid' && (
-              <button 
+              <button
                 className="btn btn-secondary"
                 onClick={handleCompare}
                 disabled={isCalculating}
@@ -299,37 +311,34 @@ function App() {
                 A/B 비교
               </button>
             )}
-            
-            <button 
+
+            <button
               className="btn btn-ink-manager"
               onClick={() => setShowInkManager(!showInkManager)}
             >
               🎨 {showInkManager ? '잉크 선택' : '잉크 관리'}
             </button>
-            
-            <button 
-              className="btn btn-history"
-              onClick={() => setShowHistory(!showHistory)}
-            >
+
+            <button className="btn btn-history" onClick={() => setShowHistory(!showHistory)}>
               📋 히스토리 관리
             </button>
-            
-            <button 
+
+            <button
               className="btn btn-mixing"
               onClick={() => setShowMixingCalculator(!showMixingCalculator)}
             >
               🧪 배합 계산기
             </button>
-            
-            <button 
+
+            <button
               className="btn btn-optimized"
               onClick={() => setShowOptimizedMixing(!showOptimizedMixing)}
               style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
             >
               🎯 최적화 배합
             </button>
-            
-            <button 
+
+            <button
               className="btn btn-professional"
               onClick={() => setShowProfessionalMixing(!showProfessionalMixing)}
               style={{ background: 'linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%)' }}
@@ -345,7 +354,7 @@ function App() {
             <section className="panel-section">
               <div className="section-header">
                 <h2>계산 결과</h2>
-                <button 
+                <button
                   className="btn btn-small"
                   onClick={() => setShowCorrection(!showCorrection)}
                 >
@@ -414,20 +423,26 @@ function App() {
               <h2>최근 레시피</h2>
               <div className="history-list">
                 {history.slice(0, 5).map((recipe, index) => (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     className="history-item"
                     onClick={() => {
                       setTargetColor(recipe.target);
                       setCurrentRecipe(recipe);
                     }}
                   >
-                    <div className="color-preview" style={{
-                      backgroundColor: `rgb(${labToRgb(recipe.mixed.L, recipe.mixed.a, recipe.mixed.b).r},
+                    <div
+                      className="color-preview"
+                      style={{
+                        backgroundColor: `rgb(${labToRgb(recipe.mixed.L, recipe.mixed.a, recipe.mixed.b).r},
                                            ${labToRgb(recipe.mixed.L, recipe.mixed.a, recipe.mixed.b).g},
-                                           ${labToRgb(recipe.mixed.L, recipe.mixed.a, recipe.mixed.b).b})`
-                    }} />
-                    <span>L:{recipe.mixed.L.toFixed(1)} a:{recipe.mixed.a.toFixed(1)} b:{recipe.mixed.b.toFixed(1)}</span>
+                                           ${labToRgb(recipe.mixed.L, recipe.mixed.a, recipe.mixed.b).b})`,
+                      }}
+                    />
+                    <span>
+                      L:{recipe.mixed.L.toFixed(1)} a:{recipe.mixed.a.toFixed(1)} b:
+                      {recipe.mixed.b.toFixed(1)}
+                    </span>
                     <span className="delta-e">ΔE: {recipe.deltaE.toFixed(2)}</span>
                   </div>
                 ))}
@@ -450,16 +465,10 @@ function App() {
       {showMixingCalculator && (
         <div className="modal-overlay" onClick={() => setShowMixingCalculator(false)}>
           <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
-            <button 
-              className="modal-close" 
-              onClick={() => setShowMixingCalculator(false)}
-            >
+            <button className="modal-close" onClick={() => setShowMixingCalculator(false)}>
               ×
             </button>
-            <MixingCalculator 
-              inkDatabase={getInkDatabase()}
-              targetColor={targetColor}
-            />
+            <MixingCalculator inkDatabase={getInkDatabase()} targetColor={targetColor} />
           </div>
         </div>
       )}
@@ -479,16 +488,13 @@ function App() {
       {showHistory && (
         <div className="modal-overlay" onClick={() => setShowHistory(false)}>
           <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
-            <button 
-              className="modal-close" 
-              onClick={() => setShowHistory(false)}
-            >
+            <button className="modal-close" onClick={() => setShowHistory(false)}>
               ×
             </button>
-            <RecipeHistory 
+            <RecipeHistory
               currentRecipe={currentRecipe}
               onSelectRecipe={(recipe) => {
-                setTargetColor(recipe.target || recipe.targetColor?.lab || { L: 0, a: 0, b: 0 });
+                setTargetColor(recipe.target || recipe.targetColor || { L: 0, a: 0, b: 0 });
                 setCurrentRecipe(recipe);
                 setShowHistory(false);
               }}

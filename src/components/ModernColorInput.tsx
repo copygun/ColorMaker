@@ -29,20 +29,20 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
     const y3 = y * y * y;
     const z3 = z * z * z;
 
-    const xr = x3 > 0.008856 ? x3 : (x - 16/116) / 7.787;
-    const yr = y3 > 0.008856 ? y3 : (y - 16/116) / 7.787;
-    const zr = z3 > 0.008856 ? z3 : (z - 16/116) / 7.787;
+    const xr = x3 > 0.008856 ? x3 : (x - 16 / 116) / 7.787;
+    const yr = y3 > 0.008856 ? y3 : (y - 16 / 116) / 7.787;
+    const zr = z3 > 0.008856 ? z3 : (z - 16 / 116) / 7.787;
 
     const r = xr * 95.047;
-    const g = yr * 100.000;
+    const g = yr * 100.0;
     const b_val = zr * 108.883;
 
     return {
       r: Math.round(Math.max(0, Math.min(255, r * 2.55))),
       g: Math.round(Math.max(0, Math.min(255, g * 2.55))),
-      b: Math.round(Math.max(0, Math.min(255, b_val * 2.55)))
+      b: Math.round(Math.max(0, Math.min(255, b_val * 2.55))),
     };
-  }
+  },
 }) => {
   const [localColor, setLocalColor] = useState<LabColor>(value);
   const [rgb, setRgb] = useState({ r: 0, g: 0, b: 0 });
@@ -54,7 +54,7 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
   useEffect(() => {
     const newRgb = labToRgb(localColor.L, localColor.a, localColor.b);
     setRgb(newRgb);
-    
+
     // Update hex input
     const toHex = (n: number) => {
       const hex = Math.round(Math.max(0, Math.min(255, n))).toString(16);
@@ -69,36 +69,39 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
   }, [value]);
 
   // Handle slider change
-  const handleSliderChange = useCallback((component: 'L' | 'a' | 'b', value: number) => {
-    const newColor = { ...localColor, [component]: value };
-    setLocalColor(newColor);
-    
-    // Validate if validator provided
-    if (onValidate) {
-      const valid = onValidate(newColor);
-      setIsValid(valid);
-    }
-    
-    // Debounced update to parent
-    onChange(newColor);
-  }, [localColor, onChange, onValidate]);
+  const handleSliderChange = useCallback(
+    (component: 'L' | 'a' | 'b', value: number) => {
+      const newColor = { ...localColor, [component]: value };
+      setLocalColor(newColor);
+
+      // Validate if validator provided
+      if (onValidate) {
+        const valid = onValidate(newColor);
+        setIsValid(valid);
+      }
+
+      // Debounced update to parent
+      onChange(newColor);
+    },
+    [localColor, onChange, onValidate],
+  );
 
   // Handle hex input
   const handleHexInput = (hex: string) => {
     setHexInput(hex);
-    
+
     // Parse hex to RGB
     const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
     if (match) {
       const r = parseInt(match[1], 16);
       const g = parseInt(match[2], 16);
       const b = parseInt(match[3], 16);
-      
+
       // Convert RGB to Lab (simplified)
       const L = Math.round((r + g + b) / 3 / 2.55);
       const a = Math.round((r - g) / 2);
       const b_val = Math.round((g - b) / 2);
-      
+
       const newColor = { L, a: a, b: b_val };
       setLocalColor(newColor);
       onChange(newColor);
@@ -134,7 +137,7 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
     { name: 'Yellow', lab: { L: 97, a: -21, b: 94 } },
     { name: 'Red', lab: { L: 53, a: 80, b: 67 } },
     { name: 'Green', lab: { L: 88, a: -86, b: 83 } },
-    { name: 'Blue', lab: { L: 32, a: 79, b: -108 } }
+    { name: 'Blue', lab: { L: 32, a: 79, b: -108 } },
   ];
 
   return (
@@ -142,33 +145,36 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
       {/* Main Color Display */}
       <div className="color-display-section">
         <div className="color-preview-large">
-          <div 
+          <div
             className="color-preview-main"
-            style={{ 
+            style={{
               backgroundColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
-              boxShadow: isValid ? 'none' : '0 0 0 3px var(--error)'
+              boxShadow: isValid ? 'none' : '0 0 0 3px var(--error)',
             }}
           >
             <div className="color-info-overlay">
               <div className="color-values-display">
-                <div onClick={() => copyToClipboard(`L:${localColor.L} a:${localColor.a} b:${localColor.b}`)}>
-                  LAB: {localColor.L.toFixed(0)}, {localColor.a.toFixed(0)}, {localColor.b.toFixed(0)}
+                <div
+                  onClick={() =>
+                    copyToClipboard(`L:${localColor.L} a:${localColor.a} b:${localColor.b}`)
+                  }
+                >
+                  LAB: {localColor.L.toFixed(0)}, {localColor.a.toFixed(0)},{' '}
+                  {localColor.b.toFixed(0)}
                 </div>
-                <div onClick={() => copyToClipboard(hexInput)}>
-                  {hexInput.toUpperCase()}
-                </div>
+                <div onClick={() => copyToClipboard(hexInput)}>{hexInput.toUpperCase()}</div>
                 <div onClick={() => copyToClipboard(`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`)}>
                   RGB: {rgb.r}, {rgb.g}, {rgb.b}
                 </div>
               </div>
             </div>
           </div>
-          
+
           {/* Gamut Warning */}
           {!isValid && (
             <div className="gamut-warning">
               <svg width="16" height="16" fill="currentColor">
-                <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 12a1 1 0 110-2 1 1 0 010 2zm0-3a1 1 0 01-1-1V5a1 1 0 112 0v3a1 1 0 01-1 1z"/>
+                <path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 12a1 1 0 110-2 1 1 0 010 2zm0-3a1 1 0 01-1-1V5a1 1 0 112 0v3a1 1 0 01-1 1z" />
               </svg>
               색상이 인쇄 가능 영역을 벗어났습니다
             </div>
@@ -184,14 +190,10 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
             placeholder="#000000"
             className="hex-input"
           />
-          <button 
-            className="copy-btn"
-            onClick={() => copyToClipboard(hexInput)}
-            title="Copy HEX"
-          >
+          <button className="copy-btn" onClick={() => copyToClipboard(hexInput)} title="Copy HEX">
             <svg width="16" height="16" fill="currentColor">
-              <path d="M10 3a1 1 0 011 1v8a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1h4zm0 1H6v8h4V4z"/>
-              <path d="M4 5H3a1 1 0 00-1 1v8a1 1 0 001 1h4a1 1 0 001-1v-1"/>
+              <path d="M10 3a1 1 0 011 1v8a1 1 0 01-1 1H6a1 1 0 01-1-1V4a1 1 0 011-1h4zm0 1H6v8h4V4z" />
+              <path d="M4 5H3a1 1 0 00-1 1v8a1 1 0 001 1h4a1 1 0 001-1v-1" />
             </svg>
           </button>
         </div>
@@ -218,7 +220,7 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
                 background: `linear-gradient(to right, 
                   lab(0% ${localColor.a} ${localColor.b}),
                   lab(50% ${localColor.a} ${localColor.b}),
-                  lab(100% ${localColor.a} ${localColor.b})`
+                  lab(100% ${localColor.a} ${localColor.b})`,
               }}
             />
           </div>
@@ -241,7 +243,7 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
                 background: `linear-gradient(to right,
                   lab(${localColor.L}% -128 ${localColor.b}),
                   lab(${localColor.L}% 0 ${localColor.b}),
-                  lab(${localColor.L}% 127 ${localColor.b})`
+                  lab(${localColor.L}% 127 ${localColor.b})`,
               }}
             />
           </div>
@@ -264,7 +266,7 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
                 background: `linear-gradient(to right,
                   lab(${localColor.L}% ${localColor.a} -128),
                   lab(${localColor.L}% ${localColor.a} 0),
-                  lab(${localColor.L}% ${localColor.a} 127)`
+                  lab(${localColor.L}% ${localColor.a} 127)`,
               }}
             />
           </div>
@@ -298,10 +300,13 @@ const ModernColorInput: React.FC<ModernColorInputProps> = ({
       {/* Color Space Visualization */}
       <div className="color-space-viz">
         <canvas id="lab-space-canvas" width="200" height="200"></canvas>
-        <div className="current-point" style={{
-          left: `${(localColor.a + 128) / 256 * 100}%`,
-          top: `${(128 - localColor.b) / 256 * 100}%`
-        }}></div>
+        <div
+          className="current-point"
+          style={{
+            left: `${((localColor.a + 128) / 256) * 100}%`,
+            top: `${((128 - localColor.b) / 256) * 100}%`,
+          }}
+        ></div>
       </div>
     </div>
   );

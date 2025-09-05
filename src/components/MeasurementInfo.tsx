@@ -11,14 +11,11 @@ const MeasurementInfo: React.FC<MeasurementInfoProps> = ({ className }) => {
     <div className={`measurement-info ${className || ''}`}>
       <div className="info-header">
         <h4>📊 색상 측정 기준</h4>
-        <button 
-          className="info-toggle"
-          onClick={() => setShowDetails(!showDetails)}
-        >
+        <button className="info-toggle" onClick={() => setShowDetails(!showDetails)}>
           {showDetails ? '간단히' : '자세히'}
         </button>
       </div>
-      
+
       <div className="info-summary">
         <div className="standard-badge">
           <span className="badge-label">현재 기준:</span>
@@ -34,16 +31,27 @@ const MeasurementInfo: React.FC<MeasurementInfoProps> = ({ className }) => {
         <div className="info-details">
           <h5>시스템 설정</h5>
           <ul>
-            <li><strong>Illuminant:</strong> D50 (5000K) - 인쇄물 평가 표준 조명</li>
-            <li><strong>Observer:</strong> 2° (CIE 1931) - 표준 관찰자</li>
-            <li><strong>용도:</strong> 오프셋, 플렉소, 디지털 인쇄</li>
-            <li><strong>색상 데이터:</strong> PANTONE® Formula Guide 기준</li>
+            <li>
+              <strong>Illuminant:</strong> D50 (5000K) - 인쇄물 평가 표준 조명
+            </li>
+            <li>
+              <strong>Observer:</strong> 2° (CIE 1931) - 표준 관찰자
+            </li>
+            <li>
+              <strong>용도:</strong> 오프셋, 플렉소, 디지털 인쇄
+            </li>
+            <li>
+              <strong>색상 데이터:</strong> PANTONE® Formula Guide 기준
+            </li>
           </ul>
 
           <h5>작업 환경 권장사항</h5>
           <ul>
-            <li><strong>조명:</strong> D50 표준 조명 부스 사용 권장</li>
-            <li><strong>일반 사무실 조명 사용 시:</strong>
+            <li>
+              <strong>조명:</strong> D50 표준 조명 부스 사용 권장
+            </li>
+            <li>
+              <strong>일반 사무실 조명 사용 시:</strong>
               <ul>
                 <li>자연광이 직접 들지 않는 곳에서 평가</li>
                 <li>가능한 5000K에 가까운 조명 사용</li>

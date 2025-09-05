@@ -9,7 +9,7 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
   const [result, setResult] = useState<any>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [activeTab, setActiveTab] = useState<'regular' | 'fluorescent' | 'spectral'>('regular');
-  
+
   const [options, setOptions] = useState({
     maxInks: 4,
     includeWhite: true,
@@ -17,31 +17,31 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
     useSpectralModel: true,
     checkMetamerism: true,
     targetIlluminant: 'D50',
-    costWeight: 0.2
+    costWeight: 0.2,
   });
 
   const calculateProfessionalMix = useCallback(async () => {
     setIsCalculating(true);
-    
+
     try {
       // Dynamic import로 엔진 로드
       const { ProfessionalMixingEngine } = await import('../../core/professionalMixingEngine.js');
       const engine = new ProfessionalMixingEngine();
-      
+
       // 설정 업데이트
       engine.settings.useFluorescent = options.includeFluorescent;
       engine.settings.useSpectralPrediction = options.useSpectralModel;
       engine.settings.checkMetamerism = options.checkMetamerism;
       engine.settings.targetIlluminant = options.targetIlluminant;
-      
+
       // 전문가용 계산
       const professionalResult = await engine.findProfessionalMix(targetColor, {
         maxInks: options.maxInks,
         includeWhite: options.includeWhite,
         costWeight: options.costWeight,
-        concentrations: [100, 70, 40]
+        concentrations: [100, 70, 40],
       });
-      
+
       setResult(professionalResult);
     } catch (error) {
       console.error('Professional calculation failed:', error);
@@ -62,29 +62,31 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
   return (
     <div className="professional-mixing">
       <h3>🔬 전문가용 고급 잉크 배합 시스템</h3>
-      
+
       {/* 옵션 패널 */}
       <div className="options-panel">
         <h4>⚙️ 고급 설정</h4>
-        
+
         <div className="option-row">
           <div className="option-group">
             <label>최대 잉크 수:</label>
-            <select 
-              value={options.maxInks} 
-              onChange={(e) => setOptions({...options, maxInks: parseInt(e.target.value)})}
+            <select
+              value={options.maxInks}
+              onChange={(e) => setOptions({ ...options, maxInks: parseInt(e.target.value) })}
             >
-              {[2,3,4,5,6].map(n => (
-                <option key={n} value={n}>{n}개</option>
+              {[2, 3, 4, 5, 6].map((n) => (
+                <option key={n} value={n}>
+                  {n}개
+                </option>
               ))}
             </select>
           </div>
-          
+
           <div className="option-group">
             <label>목표 조명:</label>
-            <select 
+            <select
               value={options.targetIlluminant}
-              onChange={(e) => setOptions({...options, targetIlluminant: e.target.value})}
+              onChange={(e) => setOptions({ ...options, targetIlluminant: e.target.value })}
             >
               <option value="D50">D50 (인쇄 표준)</option>
               <option value="D65">D65 (주광)</option>
@@ -93,58 +95,58 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
             </select>
           </div>
         </div>
-        
+
         <div className="checkbox-row">
           <label>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={options.includeWhite}
-              onChange={(e) => setOptions({...options, includeWhite: e.target.checked})}
+              onChange={(e) => setOptions({ ...options, includeWhite: e.target.checked })}
             />
             화이트 포함
           </label>
-          
+
           <label>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={options.includeFluorescent}
-              onChange={(e) => setOptions({...options, includeFluorescent: e.target.checked})}
+              onChange={(e) => setOptions({ ...options, includeFluorescent: e.target.checked })}
             />
             <span className="fluorescent-label">형광 잉크 사용</span>
           </label>
-          
+
           <label>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={options.useSpectralModel}
-              onChange={(e) => setOptions({...options, useSpectralModel: e.target.checked})}
+              onChange={(e) => setOptions({ ...options, useSpectralModel: e.target.checked })}
             />
             스펙트럼 예측
           </label>
-          
+
           <label>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={options.checkMetamerism}
-              onChange={(e) => setOptions({...options, checkMetamerism: e.target.checked})}
+              onChange={(e) => setOptions({ ...options, checkMetamerism: e.target.checked })}
             />
             메타메리즘 체크
           </label>
         </div>
-        
+
         <div className="option-group">
           <label>비용 가중치: {options.costWeight.toFixed(1)}</label>
-          <input 
-            type="range" 
-            min="0" 
-            max="1" 
+          <input
+            type="range"
+            min="0"
+            max="1"
             step="0.1"
             value={options.costWeight}
-            onChange={(e) => setOptions({...options, costWeight: parseFloat(e.target.value)})}
+            onChange={(e) => setOptions({ ...options, costWeight: parseFloat(e.target.value) })}
           />
         </div>
-        
-        <button 
+
+        <button
           className="calculate-btn professional"
           onClick={calculateProfessionalMix}
           disabled={isCalculating}
@@ -152,12 +154,12 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
           {isCalculating ? '고급 분석 중...' : '🔬 전문가 분석 실행'}
         </button>
       </div>
-      
+
       {/* 결과 표시 */}
       {result && (
         <div className="result-panel">
           <h4>📊 전문가 분석 결과</h4>
-          
+
           {/* 색상 품질 */}
           <div className="quality-section">
             <div className="quality-header">
@@ -165,20 +167,26 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
                 {result.colorData?.quality}
               </span>
               <span className="delta-e">ΔE: {result.colorData?.deltaE?.toFixed(2)}</span>
-              <span className="mix-type">{result.type === 'fluorescent' ? '🌟 형광' : result.type === 'spectral' ? '🌈 스펙트럼' : '🎨 일반'}</span>
+              <span className="mix-type">
+                {result.type === 'fluorescent'
+                  ? '🌟 형광'
+                  : result.type === 'spectral'
+                    ? '🌈 스펙트럼'
+                    : '🎨 일반'}
+              </span>
             </div>
           </div>
-          
+
           {/* 탭 네비게이션 */}
           <div className="tabs">
-            <button 
+            <button
               className={`tab ${activeTab === 'regular' ? 'active' : ''}`}
               onClick={() => setActiveTab('regular')}
             >
               기본 레시피
             </button>
             {result.fluorescenceData && (
-              <button 
+              <button
                 className={`tab ${activeTab === 'fluorescent' ? 'active' : ''}`}
                 onClick={() => setActiveTab('fluorescent')}
               >
@@ -186,7 +194,7 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
               </button>
             )}
             {result.spectralData && (
-              <button 
+              <button
                 className={`tab ${activeTab === 'spectral' ? 'active' : ''}`}
                 onClick={() => setActiveTab('spectral')}
               >
@@ -194,7 +202,7 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
               </button>
             )}
           </div>
-          
+
           {/* 탭 컨텐츠 */}
           <div className="tab-content">
             {activeTab === 'regular' && (
@@ -218,44 +226,56 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
                         <td>{ink.concentration}%</td>
                         <td>{ink.percentage}%</td>
                         <td>
-                          {ink.type === 'fluorescent' ? '형광' : 
-                           ink.isSatin ? 'Satin' : 'Base'}
+                          {ink.type === 'fluorescent' ? '형광' : ink.isSatin ? 'Satin' : 'Base'}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                
+
                 {/* 생산 지침 */}
                 {result.production && (
                   <div className="production-section">
                     <h5>🏭 생산 지침</h5>
                     <div className="instructions">
-                      {result.production.mixingInstructions?.map((instruction: string, idx: number) => (
-                        <div key={idx} className="instruction-item">{instruction}</div>
-                      ))}
+                      {result.production.mixingInstructions?.map(
+                        (instruction: string, idx: number) => (
+                          <div key={idx} className="instruction-item">
+                            {instruction}
+                          </div>
+                        ),
+                      )}
                     </div>
-                    
+
                     <div className="cost-info">
                       <span>비용 수준: </span>
                       <span className={`cost-level ${result.production.costAnalysis?.costLevel}`}>
                         {result.production.costAnalysis?.costLevel}
                       </span>
-                      {result.production.costAnalysis?.costFactors?.map((factor: string, idx: number) => (
-                        <div key={idx} className="cost-factor">• {factor}</div>
-                      ))}
+                      {result.production.costAnalysis?.costFactors?.map(
+                        (factor: string, idx: number) => (
+                          <div key={idx} className="cost-factor">
+                            • {factor}
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
               </div>
             )}
-            
+
             {activeTab === 'fluorescent' && result.fluorescenceData && (
               <div className="fluorescence-section">
                 <h5>🌟 형광 효과 분석</h5>
                 <div className="fluor-info">
-                  <div>효과적 형광도: {result.fluorescenceData.effectiveFluorescence?.toFixed(2)}</div>
-                  <div>권장 UV 강도: {(result.fluorescenceData.recommendedUVIntensity * 100).toFixed(0)}%</div>
+                  <div>
+                    효과적 형광도: {result.fluorescenceData.effectiveFluorescence?.toFixed(2)}
+                  </div>
+                  <div>
+                    권장 UV 강도:{' '}
+                    {(result.fluorescenceData.recommendedUVIntensity * 100).toFixed(0)}%
+                  </div>
                   {result.fluorescenceData.uvAppearance && (
                     <div className="uv-appearance">
                       <h6>UV 조명 하 예상 색상:</h6>
@@ -267,7 +287,7 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
                 </div>
               </div>
             )}
-            
+
             {activeTab === 'spectral' && result.spectralData && (
               <div className="spectral-section">
                 <h5>🌈 스펙트럼 예측 분석</h5>
@@ -284,25 +304,29 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
                       </tr>
                     </thead>
                     <tbody>
-                      {Object.entries(result.spectralData.appearances || {}).map(([illum, lab]: [string, any]) => (
-                        <tr key={illum}>
-                          <td>{illum}</td>
-                          <td>{lab.L?.toFixed(1)}</td>
-                          <td>{lab.a?.toFixed(1)}</td>
-                          <td>{lab.b?.toFixed(1)}</td>
-                          <td>{result.metamerism?.deltaEs?.[illum]?.toFixed(2)}</td>
-                        </tr>
-                      ))}
+                      {Object.entries(result.spectralData.appearances || {}).map(
+                        ([illum, lab]: [string, any]) => (
+                          <tr key={illum}>
+                            <td>{illum}</td>
+                            <td>{lab.L?.toFixed(1)}</td>
+                            <td>{lab.a?.toFixed(1)}</td>
+                            <td>{lab.b?.toFixed(1)}</td>
+                            <td>{result.metamerism?.deltaEs?.[illum]?.toFixed(2)}</td>
+                          </tr>
+                        ),
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             )}
           </div>
-          
+
           {/* 메타메리즘 경고 */}
           {result.metamerism && (
-            <div className={`metamerism-warning ${result.metamerism.isMetameric ? 'warning' : 'safe'}`}>
+            <div
+              className={`metamerism-warning ${result.metamerism.isMetameric ? 'warning' : 'safe'}`}
+            >
               {result.metamerism.warning}
               {result.metamerism.isMetameric && (
                 <div className="metamerism-index">
@@ -311,7 +335,7 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
               )}
             </div>
           )}
-          
+
           {/* 권장사항 */}
           {result.recommendations && result.recommendations.length > 0 && (
             <div className="recommendations">
@@ -319,8 +343,7 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
               {result.recommendations.map((rec: any, idx: number) => (
                 <div key={idx} className={`recommendation ${rec.type}`}>
                   <span className="rec-icon">
-                    {rec.type === 'critical' ? '⚠️' : 
-                     rec.type === 'warning' ? '⚡' : 'ℹ️'}
+                    {rec.type === 'critical' ? '⚠️' : rec.type === 'warning' ? '⚡' : 'ℹ️'}
                   </span>
                   {rec.message}
                 </div>
@@ -329,7 +352,7 @@ const ProfessionalMixing: React.FC<ProfessionalMixingProps> = ({ targetColor }) 
           )}
         </div>
       )}
-      
+
       <style>{`
         .professional-mixing {
           padding: 25px;

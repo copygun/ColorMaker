@@ -12,13 +12,13 @@ const DeltaESettings: React.FC<DeltaESettingsProps> = ({
   method,
   weights,
   onMethodChange,
-  onWeightsChange
+  onWeightsChange,
 }) => {
   const presets = [
     { name: '표준', weights: { kL: 1, kC: 1, kH: 1 } },
     { name: '측정기 호환', weights: { kL: 0.65, kC: 1, kH: 1 } },
     { name: '텍스타일', weights: { kL: 2, kC: 1, kH: 1 } },
-    { name: '그래픽', weights: { kL: 1, kC: 1, kH: 1 } }
+    { name: '그래픽', weights: { kL: 1, kC: 1, kH: 1 } },
   ];
 
   return (
@@ -37,7 +37,7 @@ const DeltaESettings: React.FC<DeltaESettingsProps> = ({
         <div className="weights-settings">
           <div className="presets">
             <label>프리셋:</label>
-            {presets.map(preset => (
+            {presets.map((preset) => (
               <button
                 key={preset.name}
                 className="preset-btn"

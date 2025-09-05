@@ -13,7 +13,11 @@ interface ColorDatabaseProps {
   selectedInksForProfile: string[];
   setSelectedInksForProfile: (inks: string[]) => void;
   labToRgb: (L: number, a: number, b: number) => { r: number; g: number; b: number };
-  saveVendorProfile: (profileName: string, preparedInks: string[], customValues: any) => Promise<any>;
+  saveVendorProfile: (
+    profileName: string,
+    preparedInks: string[],
+    customValues: any,
+  ) => Promise<any>;
   setShowVendorModal: (show: boolean) => void;
   onShowInfo: (title: string, content: string | string[]) => void;
 }
@@ -27,7 +31,7 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
   labToRgb,
   saveVendorProfile,
   setShowVendorModal,
-  onShowInfo
+  onShowInfo,
 }) => {
   const [editingInk, setEditingInk] = useState<EditingInk | null>(null);
 
@@ -45,8 +49,8 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
       ...customInkValues,
       [inkId]: {
         ...customInkValues[inkId],
-        [concentration]: lab
-      }
+        [concentration]: lab,
+      },
     };
     setCustomInkValues(newValues);
     // Save to default storage for now
@@ -60,38 +64,42 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
     // Save to default storage
     localStorage.setItem('customInkValues_default', JSON.stringify(newValues));
   };
-  
+
   const saveAsProfile = async () => {
     const profileName = prompt('협력사 프로파일 이름을 입력하세요:');
     if (!profileName) return;
-    
+
     // Get selected inks (those with custom values or explicitly selected)
-    const preparedInks = selectedInksForProfile.length > 0 
-      ? selectedInksForProfile 
-      : Object.keys(customInkValues);
-    
+    const preparedInks =
+      selectedInksForProfile.length > 0 ? selectedInksForProfile : Object.keys(customInkValues);
+
     if (preparedInks.length === 0) {
       onShowInfo('알림', '먼저 잉크를 선택하거나 Lab 값을 수정해주세요.');
       return;
     }
-    
+
     // Check if Process Inks are included for spot ink recipe calculation
-    const hasProcessInks = preparedInks.some(id => 
-      ['cyan', 'magenta', 'yellow', 'black', 'white'].includes(id)
+    const hasProcessInks = preparedInks.some((id) =>
+      ['cyan', 'magenta', 'yellow', 'black', 'white'].includes(id),
     );
-    
+
     if (!hasProcessInks) {
       onShowInfo('알림', 'Spot Ink 레시피 계산을 위해 Process Inks(CMYK)를 포함해야 합니다.');
       return;
     }
-    
+
     onShowInfo('처리 중', '  Spot Ink 레시피를 계산 중입니다...');
     const profile = await saveVendorProfile(profileName, preparedInks, customInkValues);
-    
+
     // Show spot ink recipes
     if (profile.spotInkRecipes && Object.keys(profile.spotInkRecipes).length > 0) {
-      const recipeInfo: string[] = [`"${profileName}" 프로파일이 저장되었습니다.`, '', 'Spot Ink 레시피가 계산되었습니다:', ''];
-      
+      const recipeInfo: string[] = [
+        `"${profileName}" 프로파일이 저장되었습니다.`,
+        '',
+        'Spot Ink 레시피가 계산되었습니다:',
+        '',
+      ];
+
       for (const [spotInkId, recipe] of Object.entries<any>(profile.spotInkRecipes)) {
         const spotInk = inkDB.getInkById(spotInkId);
         if (spotInk && recipe.recipe) {
@@ -108,7 +116,7 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
     } else {
       onShowInfo('성공', `"${profileName}" 프로파일이 저장되었습니다.`);
     }
-    
+
     setSelectedInksForProfile([]);
   };
 
@@ -122,7 +130,9 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
               <button
                 className="pro-button pro-button-primary"
                 onClick={saveAsProfile}
-                disabled={Object.keys(customInkValues).length === 0 && selectedInksForProfile.length === 0}
+                disabled={
+                  Object.keys(customInkValues).length === 0 && selectedInksForProfile.length === 0
+                }
               >
                 협력사 프로파일로 저장
               </button>
@@ -148,9 +158,17 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
           </h2>
         </div>
         <div className="pro-card-body">
-          <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+          <div
+            style={{
+              marginBottom: '12px',
+              padding: '8px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '4px',
+            }}
+          >
             <p style={{ fontSize: '0.875rem', color: '#666', margin: 0 }}>
-              💡 각 잉크의 Lab 값을 클릭하여 수정할 수 있습니다. 실제 측정값과 차이가 있을 경우 보정하세요.
+              💡 각 잉크의 Lab 값을 클릭하여 수정할 수 있습니다. 실제 측정값과 차이가 있을 경우
+              보정하세요.
             </p>
           </div>
           <table className="pro-table">
@@ -191,9 +209,12 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
                 const lab40 = getInkLabValue(ink.id, 40);
                 const rgbColor = labToRgb(lab100.L, lab100.a, lab100.b);
                 const hasCustom = !!customInkValues[ink.id];
-                
+
                 return (
-                  <tr key={ink.id} style={{ backgroundColor: hasCustom ? '#fff3cd' : 'transparent' }}>
+                  <tr
+                    key={ink.id}
+                    style={{ backgroundColor: hasCustom ? '#fff3cd' : 'transparent' }}
+                  >
                     <td>
                       <input
                         type="checkbox"
@@ -202,14 +223,20 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
                           if (e.target.checked) {
                             setSelectedInksForProfile([...selectedInksForProfile, ink.id]);
                           } else {
-                            setSelectedInksForProfile(selectedInksForProfile.filter(id => id !== ink.id));
+                            setSelectedInksForProfile(
+                              selectedInksForProfile.filter((id) => id !== ink.id),
+                            );
                           }
                         }}
                       />
                     </td>
                     <td>
                       {ink.name}
-                      {hasCustom && <span style={{ color: '#856404', fontSize: '0.75rem', marginLeft: '4px' }}>(수정됨)</span>}
+                      {hasCustom && (
+                        <span style={{ color: '#856404', fontSize: '0.75rem', marginLeft: '4px' }}>
+                          (수정됨)
+                        </span>
+                      )}
                     </td>
                     <td>{ink.type}</td>
                     <td>{lab100.L.toFixed(1)}</td>
@@ -220,24 +247,26 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
                     <td>{lab70.b.toFixed(1)}</td>
                     <td>{lab40.L.toFixed(1)}</td>
                     <td>{lab40.a.toFixed(1)}</td>
+                    <td>{lab40.b.toFixed(1)}</td>
                     <td>
-                      {lab40.b.toFixed(1)}
-                    </td>
-                    <td>
-                      <div style={{
-                        width: '30px',
-                        height: '20px',
-                        backgroundColor: `rgb(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b})`,
-                        border: '1px solid #dee2e6',
-                        borderRadius: '3px'
-                      }} />
+                      <div
+                        style={{
+                          width: '30px',
+                          height: '20px',
+                          backgroundColor: `rgb(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b})`,
+                          border: '1px solid #dee2e6',
+                          borderRadius: '3px',
+                        }}
+                      />
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button
                           className="pro-button pro-button-secondary"
                           style={{ padding: '2px 8px', fontSize: '0.75rem' }}
-                          onClick={() => setEditingInk({ ink, concentration: 100, current: lab100 })}
+                          onClick={() =>
+                            setEditingInk({ ink, concentration: 100, current: lab100 })
+                          }
                         >
                           수정
                         </button>
@@ -263,28 +292,26 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
       {/* Edit Modal */}
       {editingInk && (
         <div className="modal-overlay" onClick={() => setEditingInk(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-            <button 
-              className="modal-close" 
-              onClick={() => setEditingInk(null)}
-            >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '600px' }}
+          >
+            <button className="modal-close" onClick={() => setEditingInk(null)}>
               ×
             </button>
-            <h3 style={{ marginBottom: '24px' }}>
-              {editingInk.ink.name} - CIELAB 값 수정
-            </h3>
-            
+            <h3 style={{ marginBottom: '24px' }}>{editingInk.ink.name} - CIELAB 값 수정</h3>
+
             {/* Concentration Tabs */}
             <div style={{ marginBottom: '20px' }}>
               <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #dee2e6' }}>
-                {[100, 70, 40].map(conc => (
+                {[100, 70, 40].map((conc) => (
                   <button
                     key={conc}
                     className={`tab-button ${editingInk.concentration === conc ? 'active' : ''}`}
                     onClick={() => {
-                      const labValue = customInkValues[editingInk.ink.id]?.[conc] || 
-                                     editingInk.ink.concentrations?.[conc] || 
-                                     { L: 50, a: 0, b: 0 };
+                      const labValue = customInkValues[editingInk.ink.id]?.[conc] ||
+                        editingInk.ink.concentrations?.[conc] || { L: 50, a: 0, b: 0 };
                       setEditingInk({ ...editingInk, concentration: conc, current: labValue });
                     }}
                     style={{ flex: 1 }}
@@ -294,27 +321,40 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
                 ))}
               </div>
             </div>
-            
-            <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
+
+            <div
+              style={{
+                marginBottom: '16px',
+                padding: '12px',
+                backgroundColor: '#f8f9fa',
+                borderRadius: '4px',
+              }}
+            >
               <h4 style={{ fontSize: '0.875rem', marginBottom: '8px', color: '#495057' }}>
                 현재 값 ({editingInk.concentration}%)
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>L*</span>
-                  <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{editingInk.current.L.toFixed(1)}</div>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>
+                    {editingInk.current.L.toFixed(1)}
+                  </div>
                 </div>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>a*</span>
-                  <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{editingInk.current.a.toFixed(1)}</div>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>
+                    {editingInk.current.a.toFixed(1)}
+                  </div>
                 </div>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: '#6c757d' }}>b*</span>
-                  <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>{editingInk.current.b.toFixed(1)}</div>
+                  <div style={{ fontSize: '1.125rem', fontWeight: 600 }}>
+                    {editingInk.current.b.toFixed(1)}
+                  </div>
                 </div>
               </div>
             </div>
-            
+
             <h4 style={{ fontSize: '0.875rem', marginBottom: '12px', color: '#495057' }}>
               새 CIELAB 값 입력
             </h4>
@@ -356,7 +396,9 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
                 />
               </div>
             </div>
-            <div style={{ marginTop: '24px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <div
+              style={{ marginTop: '24px', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}
+            >
               <button
                 className="pro-button pro-button-secondary"
                 onClick={() => setEditingInk(null)}
@@ -366,10 +408,16 @@ const ColorDatabase: React.FC<ColorDatabaseProps> = ({
               <button
                 className="pro-button pro-button-primary"
                 onClick={() => {
-                  const L = parseFloat((document.getElementById('edit-L') as HTMLInputElement).value);
-                  const a = parseFloat((document.getElementById('edit-a') as HTMLInputElement).value);
-                  const b = parseFloat((document.getElementById('edit-b') as HTMLInputElement).value);
-                  
+                  const L = parseFloat(
+                    (document.getElementById('edit-L') as HTMLInputElement).value,
+                  );
+                  const a = parseFloat(
+                    (document.getElementById('edit-a') as HTMLInputElement).value,
+                  );
+                  const b = parseFloat(
+                    (document.getElementById('edit-b') as HTMLInputElement).value,
+                  );
+
                   if (!isNaN(L) && !isNaN(a) && !isNaN(b)) {
                     saveCustomValue(editingInk.ink.id, editingInk.concentration, { L, a, b });
                     setEditingInk(null);

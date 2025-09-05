@@ -7,10 +7,10 @@ interface RecipeHistoryProps {
   onCompareRecipes?: (recipes: Recipe[]) => void;
 }
 
-const RecipeHistory: React.FC<RecipeHistoryProps> = ({ 
-  currentRecipe, 
-  onSelectRecipe, 
-  onCompareRecipes 
+const RecipeHistory: React.FC<RecipeHistoryProps> = ({
+  currentRecipe,
+  onSelectRecipe,
+  onCompareRecipes,
 }) => {
   const [history, setHistory] = useState<Recipe[]>([]);
   const [selectedRecipes, setSelectedRecipes] = useState<Set<string>>(new Set());
@@ -22,12 +22,12 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   // 히스토리 로드
   useEffect(() => {
     loadHistory();
-    
+
     // 자동 저장 이벤트 리스너
     const handleStorageChange = () => {
       loadHistory();
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
@@ -52,9 +52,9 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   };
 
   const addToHistory = (recipe: Recipe) => {
-    setHistory(prev => {
+    setHistory((prev) => {
       // 중복 제거
-      const filtered = prev.filter(r => r.id !== recipe.id);
+      const filtered = prev.filter((r) => r.id !== recipe.id);
       const updated = [recipe, ...filtered].slice(0, 50); // 최대 50개 저장
       localStorage.setItem('recipeHistory', JSON.stringify(updated));
       return updated;
@@ -62,12 +62,12 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   };
 
   const deleteRecipe = (id: string) => {
-    setHistory(prev => {
-      const updated = prev.filter(r => r.id !== id);
+    setHistory((prev) => {
+      const updated = prev.filter((r) => r.id !== id);
       localStorage.setItem('recipeHistory', JSON.stringify(updated));
       return updated;
     });
-    setSelectedRecipes(prev => {
+    setSelectedRecipes((prev) => {
       const newSet = new Set(prev);
       newSet.delete(id);
       return newSet;
@@ -84,10 +84,10 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
 
   const exportHistory = () => {
     const dataStr = JSON.stringify(history, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
     const exportName = `recipe-history-${new Date().toISOString().split('T')[0]}.json`;
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportName);
@@ -97,18 +97,19 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   const importHistory = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const imported = JSON.parse(e.target?.result as string);
         if (Array.isArray(imported)) {
-          setHistory(prev => {
+          setHistory((prev) => {
             const combined = [...imported, ...prev];
             // ID로 중복 제거
-            const unique = Array.from(
-              new Map(combined.map(r => [r.id, r])).values()
-            ).slice(0, 100);
+            const unique = Array.from(new Map(combined.map((r) => [r.id, r])).values()).slice(
+              0,
+              100,
+            );
             localStorage.setItem('recipeHistory', JSON.stringify(unique));
             return unique;
           });
@@ -122,7 +123,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   };
 
   const toggleSelection = (id: string) => {
-    setSelectedRecipes(prev => {
+    setSelectedRecipes((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(id)) {
         newSet.delete(id);
@@ -134,7 +135,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   };
 
   const compareSelected = () => {
-    const recipes = history.filter(r => selectedRecipes.has(r.id));
+    const recipes = history.filter((r) => selectedRecipes.has(r.id));
     if (recipes.length >= 2 && onCompareRecipes) {
       onCompareRecipes(recipes);
     }
@@ -142,38 +143,46 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
 
   // 필터링 및 정렬
   const filteredHistory = history
-    .filter(recipe => {
+    .filter((recipe) => {
       // 검색어 필터
       if (searchTerm) {
         const search = searchTerm.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           recipe.name?.toLowerCase().includes(search) ||
-          recipe.targetColor?.name?.toLowerCase().includes(search) ||
-          recipe.inks?.some(ink => ink.name.toLowerCase().includes(search));
-        
+          false || // LabColor doesn't have a name property
+          recipe.inks?.some((ink) => ink.inkId.toLowerCase().includes(search));
+
         if (!matchesSearch) return false;
       }
-      
+
       // 타입 필터
       if (filterType !== 'all') {
-        if (filterType === 'cmyk' && !recipe.inks?.some(ink => 
-          ['cyan', 'magenta', 'yellow', 'black'].includes(ink.name.toLowerCase())
-        )) {
+        if (
+          filterType === 'cmyk' &&
+          !recipe.inks?.some((ink) =>
+            ['cyan', 'magenta', 'yellow', 'black'].includes(ink.inkId.toLowerCase()),
+          )
+        ) {
           return false;
         }
-        if (filterType === 'pantone' && !recipe.inks?.some(ink => 
-          ink.name.toLowerCase().includes('pantone')
-        )) {
+        if (
+          filterType === 'pantone' &&
+          !recipe.inks?.some((ink) => ink.inkId.toLowerCase().includes('pantone'))
+        ) {
           return false;
         }
-        if (filterType === 'custom' && recipe.inks?.every(ink => 
-          ['cyan', 'magenta', 'yellow', 'black'].includes(ink.name.toLowerCase()) ||
-          ink.name.toLowerCase().includes('pantone')
-        )) {
+        if (
+          filterType === 'custom' &&
+          recipe.inks?.every(
+            (ink) =>
+              ['cyan', 'magenta', 'yellow', 'black'].includes(ink.inkId.toLowerCase()) ||
+              ink.inkId.toLowerCase().includes('pantone'),
+          )
+        ) {
           return false;
         }
       }
-      
+
       return true;
     })
     .sort((a, b) => {
@@ -191,10 +200,14 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
   const formatDate = (timestamp?: number) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);
-    return date.toLocaleDateString('ko-KR') + ' ' + date.toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return (
+      date.toLocaleDateString('ko-KR') +
+      ' ' +
+      date.toLocaleTimeString('ko-KR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    );
   };
 
   const formatColor = (color?: LabColor) => {
@@ -206,29 +219,29 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
     <div className="recipe-history">
       <div className="history-header">
         <h2>📋 레시피 히스토리</h2>
-        
+
         {/* 도구 모음 */}
         <div className="history-tools">
-          <button 
-            onClick={exportHistory} 
+          <button
+            onClick={exportHistory}
             disabled={history.length === 0}
             className="btn-export"
             title="JSON 형식으로 내보내기"
           >
             📥 내보내기
           </button>
-          
+
           <label className="btn-import">
             📤 가져오기
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept=".json"
               onChange={importHistory}
               style={{ display: 'none' }}
             />
           </label>
-          
-          <button 
+
+          <button
             onClick={compareSelected}
             disabled={selectedRecipes.size < 2}
             className="btn-compare"
@@ -236,8 +249,8 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
           >
             🔍 비교 ({selectedRecipes.size})
           </button>
-          
-          <button 
+
+          <button
             onClick={clearHistory}
             disabled={history.length === 0}
             className="btn-clear"
@@ -257,9 +270,9 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="search-input"
         />
-        
-        <select 
-          value={filterType} 
+
+        <select
+          value={filterType}
           onChange={(e) => setFilterType(e.target.value as any)}
           className="filter-select"
         >
@@ -268,9 +281,9 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
           <option value="pantone">PANTONE</option>
           <option value="custom">커스텀</option>
         </select>
-        
-        <select 
-          value={sortBy} 
+
+        <select
+          value={sortBy}
           onChange={(e) => setSortBy(e.target.value as any)}
           className="sort-select"
         >
@@ -278,26 +291,20 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
           <option value="deltaE">Delta E순</option>
           <option value="name">이름순</option>
         </select>
-        
-        <div className="history-count">
-          총 {filteredHistory.length}개
-        </div>
+
+        <div className="history-count">총 {filteredHistory.length}개</div>
       </div>
 
       {/* 레시피 목록 */}
       <div className="history-list">
         {filteredHistory.length === 0 ? (
           <div className="empty-state">
-            {history.length === 0 ? (
-              <p>저장된 레시피가 없습니다.</p>
-            ) : (
-              <p>검색 결과가 없습니다.</p>
-            )}
+            {history.length === 0 ? <p>저장된 레시피가 없습니다.</p> : <p>검색 결과가 없습니다.</p>}
           </div>
         ) : (
-          filteredHistory.map(recipe => (
-            <div 
-              key={recipe.id} 
+          filteredHistory.map((recipe) => (
+            <div
+              key={recipe.id}
               className={`history-item ${selectedRecipes.has(recipe.id) ? 'selected' : ''}`}
             >
               <div className="item-header">
@@ -307,26 +314,32 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                   onChange={() => toggleSelection(recipe.id)}
                   className="item-checkbox"
                 />
-                
+
                 <div className="item-main" onClick={() => onSelectRecipe?.(recipe)}>
                   <h4 className="item-name">
                     {recipe.name || `레시피 #${recipe.id.substring(0, 8)}`}
                   </h4>
-                  
+
                   <div className="item-info">
                     <span className="item-date">{formatDate(recipe.timestamp)}</span>
                     {recipe.deltaE !== undefined && (
-                      <span className={`item-delta ${
-                        recipe.deltaE < 1 ? 'excellent' :
-                        recipe.deltaE < 2 ? 'good' :
-                        recipe.deltaE < 5 ? 'fair' : 'poor'
-                      }`}>
+                      <span
+                        className={`item-delta ${
+                          recipe.deltaE < 1
+                            ? 'excellent'
+                            : recipe.deltaE < 2
+                              ? 'good'
+                              : recipe.deltaE < 5
+                                ? 'fair'
+                                : 'poor'
+                        }`}
+                      >
                         ΔE: {recipe.deltaE.toFixed(2)}
                       </span>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="item-actions">
                   <button
                     onClick={(e) => {
@@ -338,7 +351,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                   >
                     {showDetails === recipe.id ? '📂' : '📁'}
                   </button>
-                  
+
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -351,27 +364,27 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                   </button>
                 </div>
               </div>
-              
+
               {/* 상세 정보 */}
               {showDetails === recipe.id && (
                 <div className="item-details">
                   <div className="detail-section">
                     <h5>목표 색상</h5>
                     <div className="detail-color">
-                      <div 
+                      <div
                         className="color-swatch"
                         style={{
                           backgroundColor: recipe.targetColor?.hex || '#ccc',
                           width: '40px',
                           height: '40px',
                           borderRadius: '4px',
-                          border: '1px solid #ddd'
+                          border: '1px solid #ddd',
                         }}
                       />
                       <span>{formatColor(recipe.targetColor?.lab)}</span>
                     </div>
                   </div>
-                  
+
                   <div className="detail-section">
                     <h5>잉크 구성</h5>
                     <div className="detail-inks">
@@ -383,7 +396,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                       ))}
                     </div>
                   </div>
-                  
+
                   {recipe.metadata && (
                     <div className="detail-section">
                       <h5>추가 정보</h5>
@@ -391,28 +404,22 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
                         {recipe.metadata.printMethod && (
                           <div>인쇄 방식: {recipe.metadata.printMethod}</div>
                         )}
-                        {recipe.metadata.substrate && (
-                          <div>기재: {recipe.metadata.substrate}</div>
-                        )}
-                        {recipe.metadata.notes && (
-                          <div>메모: {recipe.metadata.notes}</div>
-                        )}
+                        {recipe.metadata.substrate && <div>기재: {recipe.metadata.substrate}</div>}
+                        {recipe.metadata.notes && <div>메모: {recipe.metadata.notes}</div>}
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="detail-actions">
-                    <button 
-                      onClick={() => onSelectRecipe?.(recipe)}
-                      className="btn-apply"
-                    >
+                    <button onClick={() => onSelectRecipe?.(recipe)} className="btn-apply">
                       이 레시피 적용
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={() => {
                         const dataStr = JSON.stringify(recipe, null, 2);
-                        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+                        const dataUri =
+                          'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
                         const linkElement = document.createElement('a');
                         linkElement.setAttribute('href', dataUri);
                         linkElement.setAttribute('download', `recipe-${recipe.id}.json`);
@@ -435,7 +442,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
           padding: 20px;
           background: #fff;
           border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .history-header {
@@ -536,7 +543,7 @@ const RecipeHistory: React.FC<RecipeHistoryProps> = ({
         }
 
         .history-item:hover {
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .history-item.selected {

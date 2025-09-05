@@ -198,7 +198,9 @@
   font-size: 1.05em;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .save-result-btn:hover:not(:disabled) {
@@ -359,24 +361,24 @@
   .statistics-summary {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .lab-input-group {
     grid-template-columns: 1fr;
   }
-  
+
   .conditions-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .management-tools {
     flex-direction: column;
   }
-  
+
   .management-tools button,
   .management-tools .import-btn {
     width: 100%;
   }
-  
+
   .reset-btn {
     margin-left: 0;
     margin-top: 10px;

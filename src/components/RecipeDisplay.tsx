@@ -4,7 +4,7 @@ import type { Recipe, LabColor } from '../types';
 // Dynamic import to avoid bundling issues
 let RecipeRecommender: any = null;
 if (typeof window !== 'undefined') {
-  import('@core/recipeRecommender.js').then(module => {
+  import('@core/recipeRecommender.js').then((module) => {
     RecipeRecommender = module.default || module;
   });
 }
@@ -35,18 +35,14 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
         const module = await import('@core/recipeRecommender.js');
         RecipeRecommender = module.default || module;
       }
-      
+
       if (RecipeRecommender) {
         const recommender = new RecipeRecommender(inkDatabase);
         const target = targetColor || recipe.target;
-        const currentInks = recipe.inks.map(ink => ink.inkId);
-        
-        const recommendations = recommender.recommendAlternatives(
-          target,
-          currentInks,
-          recipe
-        );
-        
+        const currentInks = recipe.inks.map((ink) => ink.inkId);
+
+        const recommendations = recommender.recommendAlternatives(target, currentInks, recipe);
+
         setRecommendations(recommendations);
         setShowRecommendations(true);
       } else {
@@ -66,7 +62,9 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
       <div className="recipe-header">
         <div className="delta-e-result">
           <span className="label">Delta E:</span>
-          <span className={`value ${recipe.deltaE < 1 ? 'excellent' : recipe.deltaE < 2 ? 'good' : 'fair'}`}>
+          <span
+            className={`value ${recipe.deltaE < 1 ? 'excellent' : recipe.deltaE < 2 ? 'good' : 'fair'}`}
+          >
             {recipe.deltaE.toFixed(2)}
           </span>
         </div>
@@ -80,19 +78,23 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
         <div className="color-box">
           <div className="color-label">목표 색상</div>
           <div className="lab-values">
-            L*: {recipe.target.L.toFixed(1)}<br/>
-            a*: {recipe.target.a.toFixed(1)}<br/>
+            L*: {recipe.target.L.toFixed(1)}
+            <br />
+            a*: {recipe.target.a.toFixed(1)}
+            <br />
             b*: {recipe.target.b.toFixed(1)}
           </div>
         </div>
-        
+
         <div className="arrow">→</div>
-        
+
         <div className="color-box">
           <div className="color-label">계산 결과</div>
           <div className="lab-values">
-            L*: {recipe.mixed.L.toFixed(1)}<br/>
-            a*: {recipe.mixed.a.toFixed(1)}<br/>
+            L*: {recipe.mixed.L.toFixed(1)}
+            <br />
+            a*: {recipe.mixed.a.toFixed(1)}
+            <br />
             b*: {recipe.mixed.b.toFixed(1)}
           </div>
         </div>
@@ -119,8 +121,12 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
               </tr>
             ))}
             <tr className="total-row">
-              <td><strong>합계</strong></td>
-              <td><strong>{recipe.inks.reduce((sum, ink) => sum + ink.ratio, 0).toFixed(1)}%</strong></td>
+              <td>
+                <strong>합계</strong>
+              </td>
+              <td>
+                <strong>{recipe.inks.reduce((sum, ink) => sum + ink.ratio, 0).toFixed(1)}%</strong>
+              </td>
               <td></td>
               <td></td>
             </tr>
@@ -130,7 +136,7 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
 
       {/* 추천 레시피 버튼 */}
       <div className="recommendation-section">
-        <button 
+        <button
           className="btn btn-recommend"
           onClick={calculateRecommendations}
           disabled={isCalculating}
@@ -143,7 +149,7 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
             border: 'none',
             borderRadius: '6px',
             fontSize: '16px',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           {isCalculating ? '분석 중...' : '🎯 더 정확한 레시피 추천받기'}
@@ -152,20 +158,23 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
 
       {/* 추천 레시피 목록 */}
       {showRecommendations && recommendations.length > 0 && (
-        <div className="recommendations-container" style={{
-          marginTop: '30px',
-          padding: '20px',
-          backgroundColor: '#f7fafc',
-          borderRadius: '8px',
-          border: '2px solid #e2e8f0'
-        }}>
+        <div
+          className="recommendations-container"
+          style={{
+            marginTop: '30px',
+            padding: '20px',
+            backgroundColor: '#f7fafc',
+            borderRadius: '8px',
+            border: '2px solid #e2e8f0',
+          }}
+        >
           <h3 style={{ marginBottom: '20px', color: '#2d3748' }}>
             🎨 추천 대안 레시피 (더 높은 정확도)
           </h3>
-          
+
           {recommendations.map((rec, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className="recommendation-item"
               style={{
                 marginBottom: '20px',
@@ -173,61 +182,75 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
                 backgroundColor: 'white',
                 borderRadius: '6px',
                 border: selectedRecommendation === idx ? '2px solid #667eea' : '1px solid #cbd5e0',
-                cursor: 'pointer'
+                cursor: 'pointer',
               }}
               onClick={() => setSelectedRecommendation(selectedRecommendation === idx ? null : idx)}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ margin: 0, color: '#2d3748', fontSize: '18px' }}>
-                  {rec.name}
-                </h4>
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <h4 style={{ margin: 0, color: '#2d3748', fontSize: '18px' }}>{rec.name}</h4>
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                  <span style={{
-                    padding: '4px 12px',
-                    backgroundColor: rec.expectedDeltaE < 1 ? '#c6f6d5' : 
-                                    rec.expectedDeltaE < 2 ? '#bee3f8' : '#feebc8',
-                    color: rec.expectedDeltaE < 1 ? '#22543d' : 
-                          rec.expectedDeltaE < 2 ? '#2c5282' : '#7c2d12',
-                    borderRadius: '4px',
-                    fontWeight: '600',
-                    fontSize: '14px'
-                  }}>
+                  <span
+                    style={{
+                      padding: '4px 12px',
+                      backgroundColor:
+                        rec.expectedDeltaE < 1
+                          ? '#c6f6d5'
+                          : rec.expectedDeltaE < 2
+                            ? '#bee3f8'
+                            : '#feebc8',
+                      color:
+                        rec.expectedDeltaE < 1
+                          ? '#22543d'
+                          : rec.expectedDeltaE < 2
+                            ? '#2c5282'
+                            : '#7c2d12',
+                      borderRadius: '4px',
+                      fontWeight: '600',
+                      fontSize: '14px',
+                    }}
+                  >
                     예상 ΔE: {rec.expectedDeltaE.toFixed(2)}
                   </span>
                   {rec.improvement > 0 && (
-                    <span style={{
-                      padding: '4px 12px',
-                      backgroundColor: '#c6f6d5',
-                      color: '#22543d',
-                      borderRadius: '4px',
-                      fontSize: '14px'
-                    }}>
+                    <span
+                      style={{
+                        padding: '4px 12px',
+                        backgroundColor: '#c6f6d5',
+                        color: '#22543d',
+                        borderRadius: '4px',
+                        fontSize: '14px',
+                      }}
+                    >
                       ↓ {rec.improvementPercent}% 개선
                     </span>
                   )}
-                  <span style={{
-                    padding: '4px 12px',
-                    backgroundColor: '#e6fffa',
-                    color: '#234e52',
-                    borderRadius: '4px',
-                    fontSize: '14px'
-                  }}>
+                  <span
+                    style={{
+                      padding: '4px 12px',
+                      backgroundColor: '#e6fffa',
+                      color: '#234e52',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                    }}
+                  >
                     신뢰도: {(rec.confidence * 100).toFixed(0)}%
                   </span>
                 </div>
               </div>
 
-              <p style={{ margin: '10px 0 0 0', color: '#4a5568' }}>
-                {rec.description}
-              </p>
+              <p style={{ margin: '10px 0 0 0', color: '#4a5568' }}>{rec.description}</p>
 
-              <div style={{
-                margin: '10px 0',
-                padding: '10px',
-                backgroundColor: '#f0fff4',
-                borderLeft: '3px solid #38a169',
-                borderRadius: '4px'
-              }}>
+              <div
+                style={{
+                  margin: '10px 0',
+                  padding: '10px',
+                  backgroundColor: '#f0fff4',
+                  borderLeft: '3px solid #38a169',
+                  borderRadius: '4px',
+                }}
+              >
                 <strong>추천 이유:</strong> {rec.reason}
               </div>
 
@@ -240,8 +263,24 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ backgroundColor: '#f7fafc' }}>
-                          <th style={{ padding: '8px', textAlign: 'left', borderBottom: '1px solid #e2e8f0' }}>잉크명</th>
-                          <th style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #e2e8f0' }}>비율</th>
+                          <th
+                            style={{
+                              padding: '8px',
+                              textAlign: 'left',
+                              borderBottom: '1px solid #e2e8f0',
+                            }}
+                          >
+                            잉크명
+                          </th>
+                          <th
+                            style={{
+                              padding: '8px',
+                              textAlign: 'right',
+                              borderBottom: '1px solid #e2e8f0',
+                            }}
+                          >
+                            비율
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -250,7 +289,13 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
                             <td style={{ padding: '8px', borderBottom: '1px solid #edf2f7' }}>
                               {ink.name}
                             </td>
-                            <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #edf2f7' }}>
+                            <td
+                              style={{
+                                padding: '8px',
+                                textAlign: 'right',
+                                borderBottom: '1px solid #edf2f7',
+                              }}
+                            >
                               {ink.ratio.toFixed(1)}%
                             </td>
                           </tr>
@@ -289,17 +334,20 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
 
                   {/* PANTONE 참조 */}
                   {rec.pantoneReference && (
-                    <div style={{
-                      padding: '10px',
-                      backgroundColor: '#faf5ff',
-                      border: '1px solid #d6bcfa',
-                      borderRadius: '4px'
-                    }}>
-                      <strong>PANTONE 참조:</strong> {rec.pantoneReference.code} - {rec.pantoneReference.name}
+                    <div
+                      style={{
+                        padding: '10px',
+                        backgroundColor: '#faf5ff',
+                        border: '1px solid #d6bcfa',
+                        borderRadius: '4px',
+                      }}
+                    >
+                      <strong>PANTONE 참조:</strong> {rec.pantoneReference.code} -{' '}
+                      {rec.pantoneReference.name}
                       <br />
                       <span style={{ fontSize: '12px', color: '#718096' }}>
-                        Lab: L:{rec.pantoneReference.L.toFixed(1)} 
-                        a:{rec.pantoneReference.a.toFixed(1)} 
+                        Lab: L:{rec.pantoneReference.L.toFixed(1)}
+                        a:{rec.pantoneReference.a.toFixed(1)}
                         b:{rec.pantoneReference.b.toFixed(1)}
                       </span>
                     </div>
@@ -315,11 +363,13 @@ const RecipeDisplay: React.FC<RecipeDisplayProps> = ({ recipe, inkDatabase, targ
                       border: 'none',
                       borderRadius: '6px',
                       cursor: 'pointer',
-                      fontSize: '14px'
+                      fontSize: '14px',
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      alert(`"${rec.name}" 레시피를 적용하려면 잉크를 재선택하고 다시 계산해주세요.`);
+                      alert(
+                        `"${rec.name}" 레시피를 적용하려면 잉크를 재선택하고 다시 계산해주세요.`,
+                      );
                     }}
                   >
                     이 레시피 적용 가이드
