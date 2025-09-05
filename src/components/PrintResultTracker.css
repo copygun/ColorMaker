@@ -1,0 +1,384 @@
+.print-result-tracker {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 20px 0;
+  overflow: hidden;
+}
+
+.tracker-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tracker-header h3 {
+  margin: 0;
+  font-size: 1.2em;
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2em;
+  cursor: pointer;
+  padding: 5px 10px;
+}
+
+.tracker-content {
+  padding: 20px;
+}
+
+/* 통계 요약 */
+.statistics-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.stat-label {
+  font-size: 0.85em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 측정 입력 */
+.measurement-input {
+  margin-bottom: 30px;
+}
+
+.measurement-input h4 {
+  margin-bottom: 15px;
+  color: #333;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 5px;
+}
+
+.predicted-values {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f0f4ff;
+  border-radius: 8px;
+}
+
+.color-preview {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.color-box {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75em;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.lab-values {
+  font-family: monospace;
+  font-size: 0.95em;
+  color: #555;
+}
+
+.lab-input-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.input-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-field label {
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.input-field input,
+.input-field select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1em;
+  transition: border-color 0.3s;
+}
+
+.input-field input:focus,
+.input-field select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 인쇄 조건 */
+.print-conditions {
+  margin: 20px 0;
+  padding: 15px;
+  background: #fafbfc;
+  border-radius: 8px;
+  border: 1px solid #e1e4e8;
+}
+
+.print-conditions summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #333;
+  padding: 5px;
+  user-select: none;
+}
+
+.print-conditions summary:hover {
+  color: #667eea;
+}
+
+.conditions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.notes-field {
+  margin-top: 15px;
+}
+
+.notes-field textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+/* 저장 버튼 */
+.save-result-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.05em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.save-result-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.save-result-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 최근 결과 */
+.recent-results {
+  margin-top: 30px;
+}
+
+.recent-results h4 {
+  margin-bottom: 15px;
+  color: #333;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 5px;
+}
+
+.results-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.result-item {
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #ddd;
+  background: #fafbfc;
+  transition: all 0.3s;
+}
+
+.result-item.good {
+  border-left-color: #28a745;
+  background: #f0fff4;
+}
+
+.result-item.fair {
+  border-left-color: #ffc107;
+  background: #fffdf0;
+}
+
+.result-item.poor {
+  border-left-color: #dc3545;
+  background: #fff5f5;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.recipe-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.delta-e {
+  font-family: monospace;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.result-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85em;
+  color: #666;
+}
+
+.deviation {
+  font-family: monospace;
+}
+
+.timestamp {
+  color: #999;
+}
+
+/* 관리 도구 */
+.management-tools {
+  display: flex;
+  gap: 10px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e1e4e8;
+  flex-wrap: wrap;
+}
+
+.management-tools button,
+.management-tools .import-btn {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.management-tools button:hover,
+.management-tools .import-btn:hover {
+  background: #f8f9fa;
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.import-btn {
+  display: inline-block;
+}
+
+.reset-btn {
+  margin-left: auto;
+  background: #fff5f5 !important;
+  color: #dc3545 !important;
+  border-color: #dc3545 !important;
+}
+
+.reset-btn:hover {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+/* 스크롤바 스타일 */
+.results-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.results-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.results-list::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 3px;
+}
+
+.results-list::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .statistics-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .lab-input-group {
+    grid-template-columns: 1fr;
+  }
+  
+  .conditions-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .management-tools {
+    flex-direction: column;
+  }
+  
+  .management-tools button,
+  .management-tools .import-btn {
+    width: 100%;
+  }
+  
+  .reset-btn {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}

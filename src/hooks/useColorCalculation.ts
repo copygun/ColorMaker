@@ -19,6 +19,7 @@ import { inkDB } from '../../core/inkDatabase.js';
 import { MixingEngine } from '../../core/mixingEngine.js';
 import { AdvancedMixingEngine } from '../../core/advancedMixingEngine.js';
 import { OptimizedMixingEngine } from '../../core/optimizedMixingEngine.js';
+import { learningSystem } from '../services/LocalLearningSystem';
 
 interface UseColorCalculationOptions {
   mode?: CalculationMode;
@@ -286,6 +287,18 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
     profileId: string = 'offset',
     printSettings: { printMethod?: string; substrateType?: string } = {}
   ): Promise<Recipe> => {
+    // 학습된 보정 프로파일 적용
+    let correctedTargetColor = targetColor;
+    const calibrationProfileId = learningSystem.getActiveProfileId();
+    
+    if (calibrationProfileId) {
+      // 보정 프로파일이 있으면 목표 색상을 보정
+      correctedTargetColor = learningSystem.applyCorrectionToColor(
+        targetColor,
+        selectedInkIds.map(id => ({ inkId: id, ratio: 1 }))
+      );
+      console.log('Applied calibration:', { original: targetColor, corrected: correctedTargetColor });
+    }
     // LocalStorage에서 현재 프로파일의 커스텀 값 확인
     const currentProfileId = localStorage.getItem('currentVendorProfile');
     let customValues = null;
@@ -344,15 +357,15 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
           });
         }
         
-        // PSO 최적화 사용 (추후 구현)
-        result = await mixingEngine.optimize(targetColor, selectedInks, {
+        // PSO 최적화 사용 (추후 구현) - 보정된 색상 사용
+        result = await mixingEngine.optimize(correctedTargetColor, selectedInks, {
           method: 'pso',
           maxIterations: 500,
           ...printSettings
         });
       } else {
-        // 기존 simple 최적화 사용
-        result = mixingEngine.optimize(targetColor, selectedInks, {
+        // 기존 simple 최적화 사용 - 보정된 색상 사용
+        result = mixingEngine.optimize(correctedTargetColor, selectedInks, {
           method: 'simple',
           maxIterations: 100,
           ...printSettings
@@ -360,8 +373,8 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
       }
     } catch (error) {
       console.warn('Optimization failed, falling back to simple method', error);
-      // 폴백: simple 최적화
-      result = mixingEngine.optimize(targetColor, selectedInks, {
+      // 폴백: simple 최적화 - 보정된 색상 사용
+      result = mixingEngine.optimize(correctedTargetColor, selectedInks, {
         method: 'simple',
         maxIterations: 100,
         ...printSettings

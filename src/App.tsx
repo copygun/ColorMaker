@@ -6,6 +6,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useColorCalculation } from './hooks/useColorCalculation';
 import ColorInput from './components/ColorInput';
+import ModernColorInput from './components/ModernColorInput';
 import InkSelector from './components/InkSelector';
 import InkManager from './components/InkManager';
 import MixingCalculator from './components/MixingCalculator';
@@ -21,6 +22,7 @@ import MeasurementInfo from './components/MeasurementInfo';
 import PrintSettings from './components/PrintSettings';
 import OptimizedMixing from './components/OptimizedMixing';
 import ProfessionalMixing from './components/ProfessionalMixing';
+import PrintResultTracker from './components/PrintResultTracker';
 import type { LabColor, Recipe, CorrectionSuggestion } from './types';
 import CorrectionEngine from '@core/correctionEngine.js';
 import './App.css';
@@ -62,6 +64,7 @@ function App() {
   // 인쇄 설정 상태
   const [printMethod, setPrintMethod] = useState('offset');
   const [substrateType, setSubstrateType] = useState('white_coated');
+  const [useModernUI, setUseModernUI] = useState(false);
 
   // 레시피 계산
   const handleCalculate = useCallback(async () => {
@@ -173,18 +176,48 @@ function App() {
           
           {/* 색상 입력 */}
           <section className="panel-section">
-            <h2>목표 색상</h2>
-            <ColorInput 
-              value={targetColor}
-              onChange={setTargetColor}
-              onValidate={(color) => {
-                const rgb = labToRgb(color.L, color.a, color.b);
-                return rgb.r >= 0 && rgb.r <= 255 && 
-                       rgb.g >= 0 && rgb.g <= 255 && 
-                       rgb.b >= 0 && rgb.b <= 255;
-              }}
-              labToRgb={labToRgb}
-            />
+            <div className="section-header">
+              <h2>목표 색상</h2>
+              <button 
+                className="btn btn-small"
+                onClick={() => setUseModernUI(!useModernUI)}
+                style={{ 
+                  background: useModernUI ? 'var(--primary)' : 'var(--gray-500)',
+                  color: 'white',
+                  padding: '4px 12px',
+                  borderRadius: '4px',
+                  border: 'none',
+                  fontSize: '0.875rem'
+                }}
+              >
+                {useModernUI ? '모던 UI' : '클래식 UI'}
+              </button>
+            </div>
+            {useModernUI ? (
+              <ModernColorInput 
+                value={targetColor}
+                onChange={setTargetColor}
+                onValidate={(color) => {
+                  const rgb = labToRgb(color.L, color.a, color.b);
+                  return rgb.r >= 0 && rgb.r <= 255 && 
+                         rgb.g >= 0 && rgb.g <= 255 && 
+                         rgb.b >= 0 && rgb.b <= 255;
+                }}
+                labToRgb={labToRgb}
+              />
+            ) : (
+              <ColorInput 
+                value={targetColor}
+                onChange={setTargetColor}
+                onValidate={(color) => {
+                  const rgb = labToRgb(color.L, color.a, color.b);
+                  return rgb.r >= 0 && rgb.r <= 255 && 
+                         rgb.g >= 0 && rgb.g <= 255 && 
+                         rgb.b >= 0 && rgb.b <= 255;
+                }}
+                labToRgb={labToRgb}
+              />
+            )}
           </section>
 
           {/* 잉크 선택 */}
@@ -339,6 +372,16 @@ function App() {
               />
             </section>
           )}
+
+          {/* 실측값 피드백 시스템 */}
+          <PrintResultTracker
+            currentRecipe={currentRecipe}
+            predictedLab={currentRecipe?.mixed}
+            onCalibrationUpdate={() => {
+              // 보정 프로파일이 업데이트되면 재계산 권장
+              console.log('Calibration profile updated');
+            }}
+          />
 
           {/* 최적화된 배합 */}
           {showOptimizedMixing && (
