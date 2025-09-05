@@ -37,6 +37,7 @@ export interface InkRatio {
   inkId: string;
   ratio: number;
   concentration: number;
+  baseInk?: boolean; // ColorCorrectionSection에서 사용
 }
 
 export enum RecipeStatus {
@@ -67,6 +68,11 @@ export interface Recipe {
   isCorrection?: boolean;        // 보정된 레시피인지
   correctionDate?: string;       // 보정 적용 시간
   originalDeltaE?: number;       // 보정 전 Delta E
+  targetColor?: LabColor;        // App.tsx에서 사용
+  mixedColor?: LabColor;         // ProfessionalApp.tsx에서 사용
+  correctedDeltaE?: number;      // ColorCorrectionSection에서 사용
+  correctionIteration?: number;  // ColorCorrectionSection에서 사용
+  recipe?: Recipe;               // ProfessionalApp.tsx에서 사용 (중첩)
 }
 
 export interface DeltaEWeights {
@@ -85,6 +91,17 @@ export interface CalculationMode {
     interpolation: 'linear' | 'catmull-rom';
     deltaE: DeltaEMethod;
   };
+}
+
+export interface CalculationOptions {
+  maxInks: number;
+  includeWhite: boolean;
+  use100: boolean;
+  use70: boolean;
+  use40: boolean;
+  costWeight: number;
+  maxResults: number;
+  substrateLab?: LabColor; // useColorCalculation, ProfessionalApp에서 사용
 }
 
 export interface PrinterProfile {
@@ -108,6 +125,7 @@ export interface FeatureFlags {
 }
 
 export interface CorrectionSuggestion {
+  id: string;                   // App.tsx에서 필요
   inkId: string;
   name: string;
   addAmount: number;
