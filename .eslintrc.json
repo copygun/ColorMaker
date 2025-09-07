@@ -2,12 +2,12 @@
   "root": true,
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
-    "ecmaVersion": 2022,
+    "ecmaVersion": "latest",
     "sourceType": "module",
     "ecmaFeatures": {
       "jsx": true
     },
-    "project": "./tsconfig.json"
+    "project": ["./tsconfig.json", "./tsconfig.node.json"]
   },
   "env": {
     "browser": true,
@@ -23,7 +23,8 @@
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "plugin:react/recommended",
-    "plugin:react-hooks/recommended"
+    "plugin:react-hooks/recommended",
+    "prettier"
   ],
   "settings": {
     "react": {
@@ -36,29 +37,59 @@
       "warn",
       {
         "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_"
+        "varsIgnorePattern": "^_",
+        "destructuredArrayIgnorePattern": "^_"
       }
     ],
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports"
+      }
+    ],
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
+    "react/jsx-uses-react": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
     "no-console": [
       "warn",
       {
-        "allow": ["warn", "error"]
+        "allow": ["warn", "error", "info"]
       }
     ],
-    "prefer-const": "warn",
+    "prefer-const": "error",
     "no-var": "error",
-    "eqeqeq": ["warn", "always"],
-    "curly": ["warn", "all"]
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "curly": ["error", "multi-line"],
+    "no-nested-ternary": "warn",
+    "no-unneeded-ternary": "error",
+    "no-unused-expressions": "off",
+    "@typescript-eslint/no-unused-expressions": "error"
   },
+  "overrides": [
+    {
+      "files": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
+      "env": {
+        "jest": true
+      }
+    },
+    {
+      "files": ["*.js", "*.cjs"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    }
+  ],
   "ignorePatterns": [
     "node_modules",
     "dist",
     "build",
+    "coverage",
     "*.config.js",
-    "*.config.ts"
+    "*.config.cjs",
+    "vite-env.d.ts"
   ]
 }
