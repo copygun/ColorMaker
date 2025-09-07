@@ -7,6 +7,7 @@ import { useState, useCallback, useMemo } from 'react';
 import type {
   LabColor,
   Recipe,
+  RecipeStatus,
   CalculationMode,
   DeltaEWeights,
   DeltaEMethod,
@@ -248,7 +249,12 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
 
       // 배열인 경우 여러 Recipe 객체 생성
       if (Array.isArray(formatted)) {
-        return formatted.map((fmt: any) => ({
+        return formatted.map((fmt: any, index: number) => ({
+          id: `recipe-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+          name: `최적화 레시피 ${index + 1}`,
+          type: 'optimized' as const,
+          status: 'CALCULATED' as RecipeStatus,
+          createdAt: new Date().toISOString(),
           target: targetColor,
           inks: fmt.inks.map((ink: any) => {
             const ratio =
@@ -268,6 +274,11 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
 
       // 단일 결과인 경우 (하위 호환성)
       const recipe: Recipe = {
+        id: `recipe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: '최적화 레시피',
+        type: 'optimized' as const,
+        status: 'CALCULATED' as RecipeStatus,
+        createdAt: new Date().toISOString(),
         target: targetColor,
         inks: formatted.inks.map((ink: any) => {
           const ratio =
@@ -414,6 +425,11 @@ export function useColorCalculation(options: UseColorCalculationOptions = {}) {
 
       // Recipe 객체 생성
       const recipe: Recipe = {
+        id: `recipe-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: '선택된 잉크 레시피',
+        type: 'selected' as const,
+        status: 'CALCULATED' as RecipeStatus,
+        createdAt: new Date().toISOString(),
         target: targetColor,
         inks: selectedInkIds.map((id, i) => ({
           inkId: id,
