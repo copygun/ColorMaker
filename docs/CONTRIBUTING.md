@@ -1,82 +1,238 @@
-# 🤝 기여 가이드라인
+# 🤝 Contributing to WonLabel Color Maker
 
-원라벨 컬러메이커 프로젝트에 기여해주셔서 감사합니다! 이 문서는 프로젝트에 기여하는 방법을 안내합니다.
+Thank you for your interest in contributing to WonLabel Color Maker! We welcome contributions from the community and are grateful for any help you can provide.
 
-## 📋 목차
-- [행동 강령](#행동-강령)
-- [시작하기](#시작하기)
-- [개발 환경 설정](#개발-환경-설정)
-- [브랜치 전략](#브랜치-전략)
-- [커밋 컨벤션](#커밋-컨벤션)
-- [Pull Request 프로세스](#pull-request-프로세스)
-- [코드 스타일](#코드-스타일)
-- [테스트](#테스트)
-- [문서화](#문서화)
+## 📋 Table of Contents
 
-## 행동 강령
+- [Code of Conduct](#code-of-conduct)
+- [How Can I Contribute?](#how-can-i-contribute)
+- [Development Setup](#development-setup)
+- [Development Workflow](#development-workflow)
+- [Coding Standards](#coding-standards)
+- [Commit Guidelines](#commit-guidelines)
+- [Pull Request Process](#pull-request-process)
+- [Issue Guidelines](#issue-guidelines)
+- [Community](#community)
 
-모든 참여자는 상호 존중과 협력의 정신으로 프로젝트에 참여해야 합니다.
+## 📜 Code of Conduct
 
-## 시작하기
+### Our Pledge
 
-### 필수 요구사항
-- Node.js 18.x 이상
-- npm 또는 pnpm
+We pledge to make participation in our project a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity, level of experience, nationality, personal appearance, race, religion, or sexual identity.
+
+### Our Standards
+
+**Examples of positive behavior:**
+- Using welcoming and inclusive language
+- Being respectful of differing viewpoints
+- Gracefully accepting constructive criticism
+- Focusing on what is best for the community
+- Showing empathy towards others
+
+**Examples of unacceptable behavior:**
+- Harassment of any kind
+- Trolling, insulting, or derogatory comments
+- Personal or political attacks
+- Publishing others' private information
+- Other conduct deemed inappropriate
+
+## 🎯 How Can I Contribute?
+
+### 🐛 Reporting Bugs
+
+Before creating bug reports, please check existing issues to avoid duplicates.
+
+**When reporting a bug, include:**
+
+```markdown
+## Bug Description
+A clear and concise description of the bug.
+
+## Steps to Reproduce
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
+
+## Expected Behavior
+What you expected to happen.
+
+## Actual Behavior
+What actually happened.
+
+## Screenshots
+If applicable, add screenshots.
+
+## Environment
+- OS: [e.g., Windows 10]
+- Browser: [e.g., Chrome 90]
+- Version: [e.g., 1.0.0]
+
+## Additional Context
+Any other relevant information.
+```
+
+### 💡 Suggesting Enhancements
+
+**Enhancement suggestions should include:**
+
+```markdown
+## Feature Description
+Clear description of the proposed feature.
+
+## Problem It Solves
+What problem does this feature address?
+
+## Proposed Solution
+How should it work?
+
+## Alternatives Considered
+Other solutions you've thought about.
+
+## Additional Context
+Mockups, examples, or references.
+```
+
+### 📝 Contributing Code
+
+1. **Find an issue** - Look for issues labeled `good first issue` or `help wanted`
+2. **Comment on the issue** - Let us know you're working on it
+3. **Fork the repository** - Create your own copy
+4. **Create a branch** - Make your changes
+5. **Submit a pull request** - We'll review your contribution
+
+## 🛠️ Development Setup
+
+### Prerequisites
+
+- Node.js 18.x or higher
+- npm 9.x or higher
 - Git
+- VS Code (recommended)
 
-### 프로젝트 클론
+### Setup Steps
+
 ```bash
-git clone https://github.com/yourusername/wonlabel-color-maker.git
+# 1. Fork the repository on GitHub
+
+# 2. Clone your fork
+git clone https://github.com/YOUR-USERNAME/wonlabel-color-maker.git
 cd wonlabel-color-maker
-```
 
-## 개발 환경 설정
+# 3. Add upstream remote
+git remote add upstream https://github.com/wonlabel/color-maker.git
 
-### 1. 의존성 설치
-```bash
+# 4. Install dependencies
 npm install
-# 또는
-pnpm install
-```
 
-### 2. 개발 서버 실행
-```bash
+# 5. Create a branch for your feature
+git checkout -b feature/your-feature-name
+
+# 6. Start development server
 npm run dev
 ```
 
-### 3. 코드 품질 검사
+### VS Code Setup
+
+Install recommended extensions:
+```json
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "usernamehw.errorlens",
+    "eamodio.gitlens"
+  ]
+}
+```
+
+## 🔄 Development Workflow
+
+### 1. Stay Updated
+
 ```bash
-# 모든 검사 실행
+# Fetch latest changes from upstream
+git fetch upstream
+
+# Merge upstream changes into your branch
+git merge upstream/main
+```
+
+### 2. Make Changes
+
+```bash
+# Make your changes
+# ... edit files ...
+
+# Run tests
+npm test
+
+# Check linting
+npm run lint
+
+# Format code
+npm run format
+
+# Type check
+npm run typecheck
+```
+
+### 3. Test Thoroughly
+
+```bash
+# Run full validation
 npm run validate
 
-# 개별 검사
-npm run typecheck  # TypeScript 타입 체크
-npm run lint       # ESLint 검사
-npm run format     # Prettier 포맷팅
-npm run test       # 테스트 실행
+# Check test coverage
+npm run test:coverage
+
+# Test production build
+npm run build
+npm run preview
 ```
 
-## 브랜치 전략
+### 4. Commit Changes
 
-- `main`: 프로덕션 브랜치
-- `develop`: 개발 브랜치
-- `feature/*`: 새 기능 개발
-- `refactor/*`: 리팩토링
-- `fix/*`: 버그 수정
-- `docs/*`: 문서 작업
+Follow our commit message convention (see below).
 
-### 브랜치 생성 예시
+### 5. Push and Create PR
+
 ```bash
-git checkout -b feature/add-color-picker
-git checkout -b fix/calculation-error
-git checkout -b refactor/type-safety
+# Push to your fork
+git push origin feature/your-feature-name
+
+# Create pull request on GitHub
 ```
 
-## 커밋 컨벤션
+## 📏 Coding Standards
 
-[Conventional Commits](https://www.conventionalcommits.org/)를 따릅니다.
+Please follow our [Style Guide](./STYLEGUIDE.md). Key points:
 
-### 커밋 메시지 형식
+### TypeScript
+- Use explicit types
+- Avoid `any` type
+- Use interfaces for objects
+- Document complex functions
+
+### React
+- Functional components with hooks
+- Props validation with TypeScript
+- Memoization for expensive operations
+- Accessibility compliance (WCAG AA)
+
+### Testing
+- Minimum 80% coverage for new code
+- Test edge cases
+- Include unit and integration tests
+- Follow AAA pattern (Arrange, Act, Assert)
+
+## 📝 Commit Guidelines
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/).
+
+### Commit Message Format
+
 ```
 <type>(<scope>): <subject>
 
@@ -85,180 +241,187 @@ git checkout -b refactor/type-safety
 <footer>
 ```
 
-### 커밋 타입
-- `feat`: 새로운 기능 추가
-- `fix`: 버그 수정
-- `docs`: 문서 수정
-- `style`: 코드 포맷팅, 세미콜론 누락 등
-- `refactor`: 코드 리팩토링
-- `perf`: 성능 개선
-- `test`: 테스트 추가 또는 수정
-- `chore`: 빌드 프로세스 또는 보조 도구 변경
-- `ci`: CI 설정 파일 및 스크립트 변경
+### Types
 
-### 커밋 메시지 예시
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting, etc.)
+- `refactor`: Code refactoring
+- `perf`: Performance improvements
+- `test`: Test additions or corrections
+- `build`: Build system changes
+- `ci`: CI configuration changes
+- `chore`: Maintenance tasks
+
+### Examples
+
 ```bash
-# 좋은 예
-git commit -m "feat(calculator): Lab 색상 변환 기능 추가"
-git commit -m "fix(mixing): 잉크 비율 계산 오류 수정"
-git commit -m "docs: README에 설치 가이드 추가"
-git commit -m "refactor: TypeScript strict 모드 적용"
+# Feature
+git commit -m "feat(color-mixer): add Kubelka-Munk mixing algorithm"
 
-# 나쁜 예
-git commit -m "수정"
-git commit -m "업데이트"
-git commit -m "버그 고침"
+# Bug fix
+git commit -m "fix(validation): correct TAC limit calculation"
+
+# Documentation
+git commit -m "docs(readme): update installation instructions"
+
+# Breaking change
+git commit -m "feat(api): change color format to Lab
+
+BREAKING CHANGE: Color API now expects Lab format instead of RGB"
 ```
 
-## Pull Request 프로세스
+## 🔀 Pull Request Process
 
-### 1. 이슈 생성
-먼저 해결하려는 문제나 추가하려는 기능에 대한 이슈를 생성합니다.
+### Before Submitting
 
-### 2. 브랜치 생성 및 작업
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/your-feature
+- [ ] Code follows style guidelines
+- [ ] Tests pass (`npm test`)
+- [ ] Coverage maintained (`npm run test:coverage`)
+- [ ] Linting passes (`npm run lint`)
+- [ ] Types check (`npm run typecheck`)
+- [ ] Documentation updated
+- [ ] Commit messages follow convention
+- [ ] Branch is up to date with main
+
+### PR Template
+
+```markdown
+## Description
+Brief description of changes.
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+- [ ] Unit tests pass
+- [ ] Integration tests pass
+- [ ] Manual testing completed
+
+## Screenshots
+If applicable, add screenshots.
+
+## Checklist
+- [ ] My code follows the style guidelines
+- [ ] I have performed a self-review
+- [ ] I have commented complex code
+- [ ] I have updated documentation
+- [ ] My changes generate no warnings
+- [ ] I have added appropriate tests
+- [ ] All tests pass locally
 ```
 
-### 3. 코드 작성 및 테스트
-- 코드 작성
-- 테스트 추가/수정
-- 로컬에서 검증
+### Review Process
 
-### 4. 커밋 및 푸시
-```bash
-git add .
-git commit -m "feat: 새로운 기능 추가"
-git push origin feature/your-feature
+1. **Automatic checks** - CI/CD runs tests and checks
+2. **Code review** - Maintainers review code
+3. **Feedback** - Address review comments
+4. **Approval** - Get approval from maintainers
+5. **Merge** - PR is merged to main
+
+## 📋 Issue Guidelines
+
+### Creating Issues
+
+#### Bug Report Template
+
+```markdown
+**Describe the bug**
+Clear description of the bug.
+
+**To Reproduce**
+Steps to reproduce the behavior.
+
+**Expected behavior**
+What you expected to happen.
+
+**Screenshots**
+If applicable, add screenshots.
+
+**Environment:**
+- OS: [e.g., Windows 10]
+- Browser: [e.g., Chrome 90]
+- Version: [e.g., 1.0.0]
+
+**Additional context**
+Any other context about the problem.
 ```
 
-### 5. Pull Request 생성
-- PR 템플릿에 따라 작성
-- 관련 이슈 연결
-- 리뷰어 지정
+#### Feature Request Template
 
-### 6. 코드 리뷰
-- 리뷰 피드백 반영
-- 필요시 추가 커밋
-- CI 통과 확인
+```markdown
+**Is your feature request related to a problem?**
+Clear description of the problem.
 
-### 7. 머지
-- 모든 체크 통과
-- 리뷰 승인 받기
-- Squash and merge 또는 Rebase and merge
+**Describe the solution**
+What you want to happen.
 
-## 코드 스타일
+**Describe alternatives**
+Alternative solutions or features.
 
-### TypeScript
-```typescript
-// 명시적 타입 선언
-interface ColorData {
-  L: number;
-  a: number;
-  b: number;
-}
-
-// 함수형 컴포넌트
-const ColorInput: React.FC<Props> = ({ value, onChange }) => {
-  // ...
-};
-
-// 명확한 변수명
-const calculateDeltaE = (color1: LabColor, color2: LabColor): number => {
-  // ...
-};
+**Additional context**
+Any other context or screenshots.
 ```
 
-### React
-```tsx
-// Props 인터페이스 정의
-interface ButtonProps {
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}
+### Issue Labels
 
-// 컴포넌트 구조
-const Button: React.FC<ButtonProps> = ({ label, onClick, disabled = false }) => {
-  return (
-    <button onClick={onClick} disabled={disabled}>
-      {label}
-    </button>
-  );
-};
-```
+- `bug` - Something isn't working
+- `enhancement` - New feature or request
+- `documentation` - Documentation improvements
+- `good first issue` - Good for newcomers
+- `help wanted` - Extra attention needed
+- `question` - Further information requested
+- `duplicate` - This issue already exists
+- `wontfix` - This will not be worked on
 
-### CSS/SCSS
-```scss
-// BEM 네이밍 컨벤션
-.color-picker {
-  &__header {
-    // ...
-  }
-  
-  &__body {
-    // ...
-  }
-  
-  &--active {
-    // ...
-  }
-}
-```
+## 🌟 Recognition
 
-## 테스트
+### Contributors
 
-### 단위 테스트
-```typescript
-describe('ColorCalculator', () => {
-  it('should calculate Delta E correctly', () => {
-    const color1 = { L: 50, a: 0, b: 0 };
-    const color2 = { L: 60, a: 0, b: 0 };
-    const deltaE = calculateDeltaE(color1, color2);
-    expect(deltaE).toBeCloseTo(10, 2);
-  });
-});
-```
+We maintain a list of contributors in our README. All contributors are:
+- Listed in [CONTRIBUTORS.md](../CONTRIBUTORS.md)
+- Credited in release notes
+- Eligible for contributor badges
 
-### 테스트 실행
-```bash
-# 모든 테스트 실행
-npm run test
+### Types of Contributions
 
-# 커버리지 포함
-npm run test:coverage
+We recognize all types of contributions:
+- 💻 Code contributions
+- 📖 Documentation improvements
+- 🐛 Bug reports
+- 💡 Feature suggestions
+- 🎨 Design contributions
+- 📢 Community support
+- 🌍 Translations
 
-# 감시 모드
-npm run test:watch
-```
+## 👥 Community
 
-## 문서화
+### Communication Channels
 
-### 코드 주석
-```typescript
-/**
- * Lab 색상 간의 Delta E를 계산합니다
- * @param color1 - 첫 번째 Lab 색상
- * @param color2 - 두 번째 Lab 색상
- * @returns Delta E 값
- */
-function calculateDeltaE(color1: LabColor, color2: LabColor): number {
-  // CIE76 Delta E 공식 사용
-  // ...
-}
-```
+- **GitHub Issues** - Bug reports and feature requests
+- **GitHub Discussions** - General discussions
+- **Discord** - Real-time chat ([Join here](https://discord.gg/wonlabel))
+- **Email** - contribute@wonlabel.com
 
-### README 업데이트
-새로운 기능이나 중요한 변경사항은 README.md를 업데이트해주세요.
+### Getting Help
 
-## 도움이 필요하신가요?
+- Check the [documentation](../README.md)
+- Search [existing issues](https://github.com/wonlabel/color-maker/issues)
+- Ask in [GitHub Discussions](https://github.com/wonlabel/color-maker/discussions)
+- Join our [Discord server](https://discord.gg/wonlabel)
 
-- 이슈 트래커에서 질문하기
-- 디스코드 채널 참여
-- 메인테이너에게 연락
+## 📄 License
 
-## 라이선스
+By contributing, you agree that your contributions will be licensed under the MIT License.
 
-이 프로젝트에 기여함으로써 귀하의 기여가 프로젝트 라이선스 하에 배포되는 것에 동의합니다.
+## 🙏 Thank You!
+
+Thank you for contributing to WonLabel Color Maker! Your efforts help make this project better for everyone.
+
+---
+
+*Happy Contributing! 🎨*

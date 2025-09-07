@@ -56,6 +56,7 @@ export class InkValidation {
    * 총 비율 검증 (합이 1이 되어야 함)
    */
   static validateTotalRatio(ratios: InkRatio[]): boolean {
+    if (ratios.length === 0) return false;
     const total = ratios.reduce((sum, r) => sum + r.ratio, 0);
     return Math.abs(total - 1) < 0.001; // 부동소수점 오차 허용
   }
@@ -66,6 +67,37 @@ export class InkValidation {
   static checkTACLimit(ratios: InkRatio[], tacLimit = 3.0): boolean {
     const totalCoverage = ratios.reduce((sum, r) => sum + r.ratio, 0);
     return totalCoverage <= tacLimit;
+  }
+  
+  /**
+   * TAC (Total Area Coverage) 계산 및 검증
+   */
+  static validateTAC(inkAmounts: Record<string, number>, tacLimit: number): {
+    valid: boolean;
+    tac: number;
+    limit: number;
+  } {
+    const tac = Object.values(inkAmounts).reduce((sum, amount) => sum + amount, 0);
+    return {
+      valid: tac <= tacLimit,
+      tac,
+      limit: tacLimit
+    };
+  }
+
+  /**
+   * 잉크 농도 유효성 검증
+   */
+  static validateConcentration(concentration: number): boolean {
+    return concentration === 100 || concentration === 70 || concentration === 40;
+  }
+
+  /**
+   * 잉크 양 유효성 검증 (0-100%)
+   */
+  static validateInkAmount(amount: number): boolean {
+    return typeof amount === 'number' && !isNaN(amount) && 
+           amount >= 0 && amount <= 100;
   }
 }
 

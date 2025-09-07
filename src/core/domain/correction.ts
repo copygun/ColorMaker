@@ -8,14 +8,18 @@ import type { LabColor } from './color';
  */
 export interface CorrectionSuggestion {
   id: string;
-  inkId: string;
-  name: string;
-  addAmount: number;  // 추가량 (%)
-  expectedImpact: {
-    dL: number;       // 명도 변화 예상
-    da: number;       // a* 변화 예상
-    db: number;       // b* 변화 예상
-  };
+  recipeId: string;
+  suggestedAt: string;
+  reason: string;
+  originalDeltaE: number;
+  targetDeltaE: number;
+  adjustments: Record<string, {
+    from: number;
+    to: number;
+    reason?: string;
+  }>;
+  confidence: number;
+  method: 'machine-learning' | 'manual' | 'algorithmic';
 }
 
 /**
@@ -23,12 +27,19 @@ export interface CorrectionSuggestion {
  */
 export interface CorrectionHistory {
   id: string;
-  timestamp: string;
-  targetLab: LabColor;    // 목표 색상
-  actualLab: LabColor;    // 실제 측정 색상
-  deltaE: number;         // 색차
-  corrections: CorrectionSuggestion[];
-  status: CorrectionStatus;
+  recipeId: string;
+  suggestionId: string;
+  appliedAt: string;
+  status: 'pending' | 'applied' | 'success' | 'failed';
+  beforeDeltaE: number;
+  afterDeltaE: number;
+  iterations: number;
+  notes?: string;
+  adjustmentsApplied?: Record<string, {
+    from: number;
+    to: number;
+  }>;
+  measuredAt?: string;
 }
 
 /**
@@ -56,6 +67,56 @@ export interface CorrectionResult {
   finalColor: LabColor;
   appliedCorrections: CorrectionSuggestion[];
   confidence: number;
+}
+
+/**
+ * 보정 검증 클래스
+ */
+export class CorrectionValidation {
+  /**
+   * 보정 제안 유효성 검증
+   */
+  static validateSuggestion(suggestion: CorrectionSuggestion): boolean {
+    // 신뢰도 검증 (0-1 범위)
+    if (suggestion.confidence < 0 || suggestion.confidence > 1) {
+      return false;
+    }
+    
+    // 목표 Delta E가 음수가 아니어야 함
+    if (suggestion.targetDeltaE < 0) {
+      return false;
+    }
+    
+    // 목표 Delta E가 원본보다 작거나 같아야 함 (개선되어야 함)
+    if (suggestion.targetDeltaE > suggestion.originalDeltaE) {
+      return false;
+    }
+    
+    return true;
+  }
+  
+  /**
+   * 보정 이력 유효성 검증
+   */
+  static validateHistory(history: CorrectionHistory): boolean {
+    // 반복 횟수가 음수가 아니어야 함
+    if (history.iterations < 0) {
+      return false;
+    }
+    
+    // Delta E 값들이 음수가 아니어야 함
+    if (history.beforeDeltaE < 0 || history.afterDeltaE < 0) {
+      return false;
+    }
+    
+    // 유효한 상태 확인
+    const validStatuses = ['pending', 'applied', 'success', 'failed'];
+    if (!validStatuses.includes(history.status)) {
+      return false;
+    }
+    
+    return true;
+  }
 }
 
 /**
@@ -95,14 +156,8 @@ export class CorrectionBusinessRules {
     suggestions: CorrectionSuggestion[]
   ): CorrectionSuggestion[] {
     return suggestions.sort((a, b) => {
-      // 예상 영향력이 큰 순서로 정렬
-      const impactA = Math.abs(a.expectedImpact.dL) + 
-                      Math.abs(a.expectedImpact.da) + 
-                      Math.abs(a.expectedImpact.db);
-      const impactB = Math.abs(b.expectedImpact.dL) + 
-                      Math.abs(b.expectedImpact.da) + 
-                      Math.abs(b.expectedImpact.db);
-      return impactB - impactA;
+      // 신뢰도가 높은 순서로 정렬
+      return b.confidence - a.confidence;
     });
   }
 }

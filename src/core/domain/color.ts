@@ -61,21 +61,64 @@ export interface ColorComparison {
 /**
  * 색상 유효성 검증
  */
-export const isValidLabColor = (color: LabColor): boolean => {
+export const isValidLabColor = (color: LabColor | null | undefined): boolean => {
+  if (!color) return false;
   return (
-    color.L >= 0 && color.L <= 100 &&
-    color.a >= -128 && color.a <= 127 &&
-    color.b >= -128 && color.b <= 127
+    typeof color.L === 'number' && color.L >= 0 && color.L <= 100 &&
+    typeof color.a === 'number' && color.a >= -128 && color.a <= 127 &&
+    typeof color.b === 'number' && color.b >= -128 && color.b <= 127
+  );
+};
+
+export const isValidXYZColor = (color: XYZColor | null | undefined): boolean => {
+  if (!color) return false;
+  return (
+    typeof color.X === 'number' && color.X >= 0 &&
+    typeof color.Y === 'number' && color.Y >= 0 &&
+    typeof color.Z === 'number' && color.Z >= 0
+  );
+};
+
+export const isValidRGBColor = (color: RGBColor | null | undefined): boolean => {
+  if (!color) return false;
+  return (
+    typeof color.r === 'number' && color.r >= 0 && color.r <= 255 &&
+    typeof color.g === 'number' && color.g >= 0 && color.g <= 255 &&
+    typeof color.b === 'number' && color.b >= 0 && color.b <= 255
   );
 };
 
 /**
  * 색상 동등성 비교
  */
-export const areColorsEqual = (c1: LabColor, c2: LabColor, tolerance = 0.01): boolean => {
+export const areColorsEqual = (c1: LabColor | null | undefined, c2: LabColor | null | undefined, tolerance = 0.01): boolean => {
+  if (!c1 || !c2) return false;
   return (
     Math.abs(c1.L - c2.L) < tolerance &&
     Math.abs(c1.a - c2.a) < tolerance &&
     Math.abs(c1.b - c2.b) < tolerance
   );
+};
+
+/**
+ * Lab 색상 포맷팅
+ */
+export const formatLabColor = (color: LabColor, precision = 2): string => {
+  return `L:${color.L.toFixed(precision)} a:${color.a.toFixed(precision)} b:${color.b.toFixed(precision)}`;
+};
+
+/**
+ * Lab 색상 파싱
+ */
+export const parseLabColor = (str: string): LabColor | null => {
+  const match = str.match(/L:\s*([\d.-]+)\s*a:\s*([\d.-]+)\s*b:\s*([\d.-]+)/);
+  if (!match) return null;
+  
+  const color: LabColor = {
+    L: parseFloat(match[1]),
+    a: parseFloat(match[2]),
+    b: parseFloat(match[3])
+  };
+  
+  return isValidLabColor(color) ? color : null;
 };
